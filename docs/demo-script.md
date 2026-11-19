@@ -14,8 +14,9 @@ Site: `http://aanoor.localhost:<port>` (this bench; see "Before you start"). Eve
 
 ## Before you start
 
-1. The bench must run on a port your browser reaches. Port 8003 on the laptop is taken by another bench, so forward
-   this container's port (VS Code: Ports panel, Forward a Port, `8003` or `8013`) and open `http://aanoor.localhost:<local port>`.
+1. The bench's default site must be `aanoor.localhost` (`bench use aanoor.localhost`, then restart `bench start`), since
+   this dev server answers every host name with the default site. Open `http://aanoor.localhost:8003`. After the demo,
+   `bench use education.localhost` restores the usual default.
 2. **On the demo morning** run `bench --site aanoor.localhost execute onebook_school.demo.refresh_today` so today has
    student and staff attendance, absent teachers with uncovered periods, and a few receipts dated today.
 3. Log in once as each user you will show, so the first screen is not a cold start.
