@@ -208,3 +208,27 @@ def assignment(group, course_name, teacher, per_week):
 	return frappe.get_doc(
 		{"doctype": "Teaching Assignment", "student_group": group, "course": course(course_name), "instructor": teacher, "periods_per_week": per_week}
 	).insert(ignore_permissions=True)
+
+
+def employee_for(instructor_name):
+	"""An Employee linked to the Instructor (so HR attendance says whether the teacher is in)."""
+	inst = frappe.get_doc("Instructor", instructor_name)
+	if not inst.employee:
+		emp = frappe.get_doc(
+			{"doctype": "Employee", "first_name": inst.instructor_name, "company": company(), "status": "Active", "gender": "Female",
+			 "date_of_birth": "1985-01-01", "date_of_joining": "2020-06-01", "holiday_list": holiday_list()}
+		).insert(ignore_permissions=True)  # fmt: skip
+		inst.db_set("employee", emp.name)
+		return emp.name
+	return inst.employee
+
+
+def mark_staff(instructor_name, status, date=None):
+	from frappe.utils import nowdate
+
+	doc = frappe.get_doc(
+		{"doctype": "Attendance", "employee": employee_for(instructor_name), "attendance_date": date or nowdate(), "status": status, "company": company()}
+	)
+	doc.insert(ignore_permissions=True)
+	doc.submit()
+	return doc
