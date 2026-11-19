@@ -23,13 +23,14 @@ SETTINGS = {
 
 # login -> (full name, roles, workspace shown first)
 USERS = {
-	"correspondent": ("R. Palanisamy", ["Education Manager", "Accounts Manager", "Academics User"], "Correspondent"),
-	"principal": ("Dr. S. Meenakshi", ["Education Manager", "Academics User", "Instructor"], "Principal"),
-	"accounts": ("K. Saravanan", ["Accounts Manager", "Accounts User"], "Fees Office"),
-	"office": ("M. Revathi", ["Academics User"], "School Office"),
-	"teacher.vi": ("P. Anitha", ["Instructor"], "Class Teacher"),
-	"teacher.x": ("N. Karthikeyan", ["Instructor"], "Class Teacher"),
+	"correspondent": ("R. Palanisamy", ["School Correspondent", "Education Manager", "Accounts Manager", "Academics User"], "Correspondent"),
+	"principal": ("Dr. S. Meenakshi", ["School Principal", "Education Manager", "Academics User", "Instructor"], "Principal"),
+	"accounts": ("K. Saravanan", ["School Accountant", "Accounts Manager", "Accounts User"], "Fees Office"),
+	"office": ("M. Revathi", ["School Office", "Academics User"], "School Office"),
+	"teacher.vi": ("P. Anitha", ["Class Teacher", "Instructor"], "Class Teacher"),
+	"teacher.x": ("N. Karthikeyan", ["Class Teacher", "Instructor"], "Class Teacher"),
 }
+MODULE_PROFILE = "School Desk"
 
 
 def email(login):
@@ -40,6 +41,7 @@ def load(ctx):
 	company_details(ctx)
 	settings(ctx)
 	calendar(ctx)
+	holidays(ctx)
 	users(ctx)
 
 
@@ -92,9 +94,45 @@ def calendar(ctx):
 	)
 
 
+def holidays(ctx):
+	name = "Aanoor Vidyalaya 2026-27"
+	if not frappe.db.exists("Holiday List", name):
+		doc = frappe.get_doc({"doctype": "Holiday List", "holiday_list_name": name, "from_date": "2026-04-01", "to_date": "2027-03-31", "weekly_off": "Sunday"})
+		doc.get_weekly_off_dates()
+		for date, what in (("2026-08-15", "Independence Day"), ("2026-10-02", "Gandhi Jayanti"), ("2026-10-20", "Deepavali"), ("2027-01-15", "Pongal"), ("2027-01-26", "Republic Day")):
+			doc.append("holidays", {"holiday_date": date, "description": what})
+		doc.insert(ignore_permissions=True)
+		ctx.made()
+	frappe.db.set_value("Company", ctx.company, "default_holiday_list", name)
+
+
 def users(ctx):
-	for login, (full_name, roles, _workspace) in USERS.items():
-		ensure_user(ctx, email(login), full_name, roles)
+	from onebook_school.setup.desk import build
+
+	build()
+	module_profile()
+	for login, (full_name, roles, workspace) in USERS.items():
+		mail = ensure_user(ctx, email(login), full_name, roles)
+		frappe.db.set_value("User", mail, {"default_app": "onebook_school", "default_workspace": workspace, "module_profile": MODULE_PROFILE})
+		user = frappe.get_doc("User", mail)
+		user.flags.ignore_permissions = True
+		user.save()  # applies the module profile's blocked modules
+
+
+def module_profile():
+	"""School staff see the school's own desk: every other module is blocked (DocType rights are unaffected)."""
+	keep = {"OneBook School"}
+	blocked = [m for m in frappe.get_all("Module Def", pluck="name") if m not in keep]
+	if frappe.db.exists("Module Profile", MODULE_PROFILE):
+		doc = frappe.get_doc("Module Profile", MODULE_PROFILE)
+		doc.set("block_modules", [])
+	else:
+		doc = frappe.new_doc("Module Profile")
+		doc.module_profile_name = MODULE_PROFILE
+	for m in blocked:
+		doc.append("block_modules", {"module": m})
+	doc.flags.ignore_permissions = True
+	doc.save()
 
 
 def ensure_user(ctx, mail, full_name, roles, user_type="System User"):

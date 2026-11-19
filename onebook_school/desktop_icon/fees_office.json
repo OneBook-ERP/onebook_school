@@ -1,0 +1,32 @@
+{
+ "app": "onebook_school",
+ "bg_color": "gray",
+ "creation": "2026-11-19 12:05:27.945384",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon": "wallet",
+ "icon_type": "Link",
+ "idx": 3,
+ "label": "Fees Office",
+ "link_to": "Fees Office",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-11-19 12:09:33.068103",
+ "modified_by": "Administrator",
+ "name": "Fees Office",
+ "owner": "Administrator",
+ "parent_icon": "OneBook School",
+ "restrict_removal": 0,
+ "roles": [
+  {
+   "role": "School Accountant"
+  },
+  {
+   "role": "School Correspondent"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "standard": 1
+}

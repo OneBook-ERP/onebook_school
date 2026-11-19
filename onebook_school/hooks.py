@@ -10,6 +10,10 @@ app_license = "gpl-3.0"
 
 required_apps = ["campus"]
 
+add_to_apps_screen = [
+	{"name": "onebook_school", "logo": "/assets/onebook_school/images/onebook-school.svg", "title": "OneBook School", "route": "/desk/correspondent"}
+]
+
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
 # 	{

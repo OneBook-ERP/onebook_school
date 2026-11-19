@@ -9,5 +9,7 @@ def after_install():
 
 def after_migrate():
 	from onebook_school.setup.custom_fields import create_all
+	from onebook_school.setup.desk import build
 
 	create_all()
+	build()

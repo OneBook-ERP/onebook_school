@@ -1,0 +1,32 @@
+{
+ "app": "onebook_school",
+ "bg_color": "gray",
+ "creation": "2026-11-19 12:05:28.090719",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon": "users-round",
+ "icon_type": "Link",
+ "idx": 5,
+ "label": "Class Teacher",
+ "link_to": "Class Teacher",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-11-19 12:09:33.196010",
+ "modified_by": "Administrator",
+ "name": "Class Teacher",
+ "owner": "Administrator",
+ "parent_icon": "OneBook School",
+ "restrict_removal": 0,
+ "roles": [
+  {
+   "role": "Class Teacher"
+  },
+  {
+   "role": "School Principal"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "standard": 1
+}

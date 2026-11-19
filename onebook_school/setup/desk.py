@@ -1,0 +1,238 @@
+"""The school desk: one workspace per role, each opening on the numbers that role is judged by.
+
+Built in code on install and migrate (idempotent) because number cards and charts are not synced from files:
+roles, number cards, dashboard charts, workspaces, their sidebars, the app's dock and desktop icons.
+"""
+
+import json
+
+import frappe
+
+APP = "onebook_school"
+MODULE = "OneBook School"
+
+ROLES = ["School Correspondent", "School Principal", "School Accountant", "School Office", "Class Teacher"]
+
+TODAY = ["Timespan", "today"]
+MONTH = ["Timespan", "this month"]
+
+
+def flt_(dt, field, op, value):
+	return [dt, field, op, value, False]
+
+
+CARDS = {
+	"Fees Collected Today": dict(document_type="Payment Entry", function="Sum", aggregate_function_based_on="paid_amount", color="#2e7d32",
+		filters=[flt_("Payment Entry", "posting_date", *TODAY), flt_("Payment Entry", "docstatus", "=", 1), flt_("Payment Entry", "payment_type", "=", "Receive")]),
+	"Fees Collected This Month": dict(document_type="Payment Entry", function="Sum", aggregate_function_based_on="paid_amount", color="#2e7d32",
+		filters=[flt_("Payment Entry", "posting_date", *MONTH), flt_("Payment Entry", "docstatus", "=", 1), flt_("Payment Entry", "payment_type", "=", "Receive")]),
+	"Outstanding Fees": dict(document_type="Sales Invoice", function="Sum", aggregate_function_based_on="outstanding_amount", color="#c62828",
+		filters=[flt_("Sales Invoice", "docstatus", "=", 1), flt_("Sales Invoice", "student", "is", "set"), flt_("Sales Invoice", "outstanding_amount", ">", 0)]),
+	"Overdue Fee Invoices": dict(document_type="Sales Invoice", function="Count", color="#ef6c00",
+		filters=[flt_("Sales Invoice", "status", "=", "Overdue"), flt_("Sales Invoice", "student", "is", "set")]),
+	"Receipts Today": dict(document_type="Family Receipt", function="Count", color="#2e7d32",
+		filters=[flt_("Family Receipt", "posting_date", *TODAY), flt_("Family Receipt", "docstatus", "=", 1)]),
+	"Students Enrolled": dict(document_type="Student", function="Count", color="#1565c0", filters=[flt_("Student", "enabled", "=", 1)]),
+	"Present Today": dict(type="Custom", method="onebook_school.dashboard.present_today", color="#2e7d32"),
+	"Absent Today": dict(document_type="Student Attendance", function="Count", color="#c62828",
+		filters=[flt_("Student Attendance", "date", *TODAY), flt_("Student Attendance", "status", "=", "Absent"), flt_("Student Attendance", "docstatus", "=", 1)]),
+	"Open Enquiries": dict(document_type="Lead", function="Count", color="#6a1b9a", filters=[flt_("Lead", "status", "in", ["Open", "Replied", "Interested"])]),
+	"Report Cards Ready": dict(document_type="Report Card", function="Count", color="#1565c0", filters=[]),
+	"Certificates This Month": dict(document_type="Certificate Request", function="Count", color="#6a1b9a",
+		filters=[flt_("Certificate Request", "creation", *MONTH), flt_("Certificate Request", "docstatus", "=", 1)]),
+}  # fmt: skip
+
+CHARTS = {
+	"Fee Collection by Month": dict(chart_type="Sum", document_type="Payment Entry", based_on="posting_date", value_based_on="paid_amount",
+		time_interval="Monthly", timespan="Last Year", type="Line", color="#a3197b",
+		filters=[flt_("Payment Entry", "docstatus", "=", 1), flt_("Payment Entry", "payment_type", "=", "Receive")]),
+	"Fee Collection - Last 30 Days": dict(chart_type="Sum", document_type="Payment Entry", based_on="posting_date", value_based_on="paid_amount",
+		time_interval="Daily", timespan="Last Month", type="Bar", color="#2e7d32",
+		filters=[flt_("Payment Entry", "docstatus", "=", 1), flt_("Payment Entry", "payment_type", "=", "Receive")]),
+	"Dues by Class": dict(chart_type="Group By", document_type="Sales Invoice", group_by_based_on="obs_program", group_by_type="Sum",
+		aggregate_function_based_on="outstanding_amount", type="Bar", color="#c62828", number_of_groups=0,
+		filters=[flt_("Sales Invoice", "docstatus", "=", 1), flt_("Sales Invoice", "outstanding_amount", ">", 0), flt_("Sales Invoice", "student", "is", "set")]),
+	"Payment Mode": dict(chart_type="Group By", document_type="Payment Entry", group_by_based_on="mode_of_payment", group_by_type="Sum",
+		aggregate_function_based_on="paid_amount", type="Donut", filters=[flt_("Payment Entry", "docstatus", "=", 1), flt_("Payment Entry", "payment_type", "=", "Receive")]),
+	"Students by Class": dict(chart_type="Group By", document_type="Program Enrollment", group_by_based_on="program", group_by_type="Count",
+		type="Bar", color="#1565c0", number_of_groups=0, filters=[flt_("Program Enrollment", "docstatus", "=", 1)]),
+	"Attendance Today": dict(chart_type="Group By", document_type="Student Attendance", group_by_based_on="status", group_by_type="Count",
+		type="Donut", filters=[flt_("Student Attendance", "date", *TODAY), flt_("Student Attendance", "docstatus", "=", 1)]),
+}  # fmt: skip
+
+
+def dt(label, link_to, **kw):
+	return dict({"label": label, "link_to": link_to, "type": "DocType", "doc_view": kw.pop("view", "List")}, **kw)
+
+
+def rpt(label, link_to):
+	return {"label": label, "link_to": link_to, "type": "Report", "is_query_report": 1}
+
+
+OVERDUE = '{"student": ["is", "set"], "status": "Overdue"}'
+
+# name -> (icon, roles, intro, cards, charts, shortcuts, link groups)
+WORKSPACES = {
+	"Correspondent": (
+		"chart-pie", ["School Correspondent", "System Manager"],
+		"The school at a glance: money in, money due, children in class.",
+		["Fees Collected Today", "Fees Collected This Month", "Outstanding Fees", "Present Today", "Students Enrolled", "Open Enquiries"],
+		["Fee Collection by Month", "Dues by Class", "Payment Mode", "Students by Class"],
+		[dt("Defaulters", "Sales Invoice", stats_filter=OVERDUE, format="{} Overdue", color="Red"), dt("Fee Receipts", "Family Receipt"),
+		 dt("Fee Committee Order", "Fee Committee Order"), rpt("UDISE Student Export", "UDISE Student Export"), dt("Report Cards", "Report Card"),
+		 dt("Certificates", "Certificate Request")],
+		{"Fees": [("DocType", "Family Receipt"), ("DocType", "Sales Invoice"), ("DocType", "Fee Structure"), ("DocType", "Fee Committee Order"), ("Report", "Accounts Receivable")],
+		 "Students": [("DocType", "Student"), ("DocType", "Student Group"), ("DocType", "Report Card"), ("Report", "UDISE Student Export")],
+		 "Settings": [("DocType", "School Settings"), ("DocType", "Academic Year"), ("DocType", "Program")]},
+	),
+	"Principal": (
+		"school", ["School Principal", "School Correspondent", "System Manager"],
+		"Today's attendance, this term's results and the returns that are due.",
+		["Present Today", "Absent Today", "Students Enrolled", "Report Cards Ready", "Open Enquiries", "Certificates This Month"],
+		["Attendance Today", "Students by Class", "Dues by Class"],
+		[dt("Mark Entry", "Mark Entry"), dt("Report Cards", "Report Card"), rpt("UDISE Student Export", "UDISE Student Export"),
+		 dt("Class Sections", "Student Group"), dt("Attendance", "Student Attendance"), dt("Enquiries", "Lead"), dt("Certificates", "Certificate Request"),
+		 dt("Students", "Student")],
+		{"Academics": [("DocType", "Program"), ("DocType", "Course"), ("DocType", "Student Group"), ("DocType", "Mark Entry"), ("DocType", "Report Card")],
+		 "Returns": [("Report", "UDISE Student Export"), ("DocType", "Fee Committee Order"), ("DocType", "Student")],
+		 "Parents": [("DocType", "Guardian"), ("DocType", "Message Template"), ("DocType", "Circular")]},
+	),
+	"Fees Office": (
+		"wallet", ["School Accountant", "School Correspondent", "System Manager"],
+		"Collect, receipt and follow up: every child's fee, one parent payment.",
+		["Fees Collected Today", "Receipts Today", "Outstanding Fees", "Overdue Fee Invoices"],
+		["Fee Collection - Last 30 Days", "Dues by Class", "Payment Mode"],
+		[dt("New Fee Receipt", "Family Receipt", view="New", color="Green"), dt("Fee Receipts", "Family Receipt"),
+		 dt("Overdue Invoices", "Sales Invoice", stats_filter=OVERDUE, format="{} Overdue", color="Red"), dt("Fee Structures", "Fee Structure"),
+		 dt("Fee Committee Order", "Fee Committee Order"), rpt("Accounts Receivable", "Accounts Receivable")],
+		{"Collect": [("DocType", "Family Receipt"), ("DocType", "Payment Entry"), ("DocType", "Mode of Payment")],
+		 "Bill": [("DocType", "Sales Invoice"), ("DocType", "Fee Structure"), ("DocType", "Fee Category"), ("DocType", "Fee Committee Order")],
+		 "Reports": [("Report", "Accounts Receivable"), ("Report", "General Ledger")]},
+	),
+	"School Office": (
+		"building-2", ["School Office", "School Principal", "System Manager"],
+		"Admissions, records and certificates for parents at the counter.",
+		["Students Enrolled", "Open Enquiries", "Certificates This Month", "Absent Today"],
+		["Students by Class"],
+		[dt("Enquiries", "Lead"), dt("Students", "Student"), dt("Parents", "Guardian"), dt("Enrolments", "Program Enrollment"),
+		 dt("Certificates", "Certificate Request"), rpt("UDISE Student Export", "UDISE Student Export")],
+		{"Admissions": [("DocType", "Lead"), ("DocType", "Student Applicant"), ("DocType", "Program Enrollment")],
+		 "Records": [("DocType", "Student"), ("DocType", "Guardian"), ("DocType", "Student Group"), ("DocType", "Certificate Request")],
+		 "Parents": [("DocType", "Message Template"), ("DocType", "Circular")]},
+	),
+	"Class Teacher": (
+		"users-round", ["Class Teacher", "School Principal", "System Manager"],
+		"Your section: attendance in the morning, marks after each test.",
+		["Present Today", "Absent Today", "Report Cards Ready"],
+		["Attendance Today"],
+		[dt("Take Attendance", "Student Attendance Tool", view="New", color="Green"), dt("Enter Marks", "Mark Entry", view="New", color="Blue"),
+		 dt("Report Cards", "Report Card"), dt("My Sections", "Student Group"), dt("Students", "Student")],
+		{"Class": [("DocType", "Student Group"), ("DocType", "Student"), ("DocType", "Student Attendance")],
+		 "Assessment": [("DocType", "Mark Entry"), ("DocType", "Report Card")]},
+	),
+}
+
+
+def build():
+	for role in ROLES:
+		if not frappe.db.exists("Role", role):
+			frappe.get_doc({"doctype": "Role", "role_name": role, "desk_access": 1}).insert(ignore_permissions=True)
+	for name, spec in CARDS.items():
+		number_card(name, spec)
+	for name, spec in CHARTS.items():
+		chart(name, spec)
+	for seq, (name, spec) in enumerate(WORKSPACES.items()):
+		workspace(name, seq, *spec)
+		sidebar(name, spec[0], spec[6])
+		desktop_icon(name, spec[0], spec[1], seq)
+	dock()
+	frappe.clear_cache()
+
+
+def number_card(name, spec):
+	spec = dict(spec)
+	filters = spec.pop("filters", [])
+	values = {"label": name, "type": spec.pop("type", "Document Type"), "is_public": 1, "is_standard": 0, "module": MODULE,
+			  "filters_json": json.dumps(filters), "show_percentage_stats": 0, **spec}  # fmt: skip
+	upsert("Number Card", name, values)
+
+
+def chart(name, spec):
+	spec = dict(spec)
+	filters = spec.pop("filters", [])
+	values = {"chart_name": name, "is_public": 1, "is_standard": 0, "module": MODULE, "filters_json": json.dumps(filters), **spec}
+	if spec.get("color"):
+		values["color"] = spec["color"]
+	upsert("Dashboard Chart", name, values)
+
+
+def workspace(name, seq, icon, roles, intro, cards, charts, shortcuts, links):
+	blocks = [{"id": "hd", "type": "header", "data": {"text": f'<span class="h4"><b>{name}</b></span>', "col": 12}},
+			  {"id": "pg", "type": "paragraph", "data": {"text": f'<span class="text-muted">{intro}</span>', "col": 12}}]  # fmt: skip
+	blocks += [{"id": f"nc{i}", "type": "number_card", "data": {"number_card_name": c, "col": 4 if len(cards) % 3 == 0 else 3}} for i, c in enumerate(cards)]
+	blocks += [{"id": "sp1", "type": "spacer", "data": {"col": 12}}]
+	blocks += [{"id": f"ch{i}", "type": "chart", "data": {"chart_name": c, "col": 12 if (len(charts) % 2 and i == 0) else 6}} for i, c in enumerate(charts)]
+	blocks += [{"id": "hd2", "type": "header", "data": {"text": '<span class="h5"><b>Quick actions</b></span>', "col": 12}}]
+	blocks += [{"id": f"sc{i}", "type": "shortcut", "data": {"shortcut_name": s["label"], "col": 3}} for i, s in enumerate(shortcuts)]
+	blocks += [{"id": "hd3", "type": "header", "data": {"text": '<span class="h5"><b>Everything else</b></span>', "col": 12}}]
+	blocks += [{"id": f"cd{i}", "type": "card", "data": {"card_name": card, "col": 4}} for i, card in enumerate(links)]
+	link_rows = []
+	for card, items in links.items():
+		link_rows.append({"type": "Card Break", "label": card, "link_count": len(items)})
+		link_rows += [{"type": "Link", "label": target, "link_type": kind, "link_to": target, "is_query_report": 1 if kind == "Report" else 0} for kind, target in items]
+	values = {
+		"label": name, "title": name, "module": MODULE, "app": APP, "public": 1, "icon": icon, "sequence_id": 10 + seq, "is_hidden": 0,
+		"content": json.dumps(blocks), "roles": [{"role": r} for r in roles],
+		"number_cards": [{"number_card_name": c, "label": c} for c in cards], "charts": [{"chart_name": c, "label": c} for c in charts],
+		"shortcuts": shortcuts, "links": link_rows,
+	}  # fmt: skip
+	upsert("Workspace", name, values, child_tables=("roles", "number_cards", "charts", "shortcuts", "links"))
+
+
+def sidebar(name, icon, links):
+	items = [{"type": "Link", "label": "Home", "link_type": "Workspace", "link_to": name, "icon": "house"}]
+	for card, rows in links.items():
+		items.append({"type": "Section Break", "label": card, "collapsible": 1, "indent": 1})
+		items += [{"type": "Link", "label": target, "link_type": kind, "link_to": target, "child": 1} for kind, target in rows]
+	doctype = "Sidebar" if frappe.db.exists("DocType", "Sidebar") else "Workspace Sidebar"
+	upsert(doctype, name, {"title": name, "header_icon": icon, "app": APP, "module": MODULE, "standard": 1, "items": items}, child_tables=("items",))
+
+
+def desktop_icon(name, icon, roles, seq):
+	upsert("Desktop Icon", "OneBook School", {"label": "OneBook School", "icon_type": "App", "app": APP, "link_type": "External",
+		"link": "/desk/correspondent", "logo_url": "/assets/onebook_school/images/onebook-school.svg", "standard": 1, "hidden": 0})  # fmt: skip
+	upsert("Desktop Icon", name, {"label": name, "icon_type": "Link", "icon": icon, "app": APP, "link_type": "Workspace Sidebar",
+		"link_to": name, "parent_icon": "OneBook School", "standard": 1, "hidden": 0, "idx": seq + 1,
+		"roles": [{"role": r} for r in roles]}, child_tables=("roles",))  # fmt: skip
+
+
+def dock():
+	items = [{"link_type": "Workspace", "link_to": name, "title": name, "icon": spec[0]} for name, spec in WORKSPACES.items()]
+	name = frappe.db.get_value("Dock", {"app": APP, "user": ["is", "not set"]})
+	values = {"app": APP, "standard": 1, "items": items}
+	if name:
+		doc = frappe.get_doc("Dock", name)
+		doc.set("items", [])
+		doc.update(values)
+		doc.save(ignore_permissions=True)
+	else:
+		frappe.get_doc(dict(values, doctype="Dock")).insert(ignore_permissions=True)
+
+
+def upsert(doctype, name, values, child_tables=()):
+	values = {k: v for k, v in values.items() if frappe.get_meta(doctype).has_field(k) or k in child_tables}
+	if frappe.db.exists(doctype, name):
+		doc = frappe.get_doc(doctype, name)
+		for table in child_tables:
+			doc.set(table, [])
+		doc.update(values)
+		doc.flags.ignore_permissions = True
+		doc.flags.ignore_links = True
+		doc.save()
+		return doc
+	doc = frappe.new_doc(doctype)
+	doc.update(values)
+	doc.flags.ignore_permissions = True
+	doc.flags.ignore_links = True
+	doc.insert(set_name=name)
+	return doc

@@ -89,5 +89,48 @@ def transfer_certificate(ctx):
 	)  # fmt: skip
 	doc.flags.ignore_permissions = True
 	doc.insert()
-	doc.submit()
+	principal_holds_position(ctx)
+	tc_policy(ctx)
+	approve_as_principal(doc)
 	ctx.made()
+
+
+def tc_policy(ctx):
+	"""A transfer certificate is issued once the principal approves it."""
+	if frappe.db.exists("Approval Policy", "Transfer Certificate - Principal"):
+		return
+	frappe.get_doc(
+		{"doctype": "Approval Policy", "policy_name": "Transfer Certificate - Principal", "document_type": "Certificate Request",
+		 "company": ctx.company, "enabled": 1, "priority": 10, "condition": "doc.is_transfer_certificate and not doc.supersedes",
+		 "on_final_action": "Submit",
+		 "levels": [{"title": "Principal", "approver_type": "Position", "approver": "PRINCIPAL", "sla_hours": 48}]}
+	).insert(ignore_permissions=True)  # fmt: skip
+
+
+def principal_holds_position(ctx):
+	"""The principal login holds campus's PRINCIPAL position, so certificate approvals reach her."""
+	from onebook_school.demo.school import email
+
+	user = email("principal")
+	if not frappe.db.exists("Position Holder", {"position": "PRINCIPAL", "user": user}):
+		frappe.get_doc(
+			{"doctype": "Position Holder", "position": "PRINCIPAL", "user": user, "from_date": "2026-06-01",
+			 "scope_doctype": "Company", "scope_value": ctx.company}
+		).insert(ignore_permissions=True)  # fmt: skip
+
+
+def approve_as_principal(doc):
+	"""The office asks, the principal approves; campus then issues the certificate with its QR code."""
+	from campus.campus_platform.approvals import approve, request_approval
+
+	from onebook_school.demo.school import email
+
+	request = request_approval(doc.doctype, doc.name)
+	if not request:
+		return
+	office = frappe.session.user
+	try:
+		frappe.set_user(email("principal"))
+		approve(request, "Fees clear, records checked.")
+	finally:
+		frappe.set_user(office)

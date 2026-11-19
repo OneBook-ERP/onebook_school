@@ -43,6 +43,7 @@ def attendance(ctx, rng, groups):
 					 "student_group": group, "status": "Absent" if absent else "Present"}
 				)  # fmt: skip
 				doc.flags.ignore_permissions = True
+				doc.flags.attendance_correction = True  # historical back-fill, as when a school's old registers are migrated
 				doc.insert()
 				doc.submit()
 				ctx.made()

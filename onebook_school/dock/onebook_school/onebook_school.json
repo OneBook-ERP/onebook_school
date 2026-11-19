@@ -1,0 +1,55 @@
+{
+ "app": "onebook_school",
+ "creation": "2026-11-19 12:05:28.110805",
+ "docstatus": 0,
+ "doctype": "Dock",
+ "idx": 0,
+ "items": [
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "chart-pie",
+   "link_to": "Correspondent",
+   "link_type": "Workspace",
+   "title": "Correspondent"
+  },
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "school",
+   "link_to": "Principal",
+   "link_type": "Workspace",
+   "title": "Principal"
+  },
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "wallet",
+   "link_to": "Fees Office",
+   "link_type": "Workspace",
+   "title": "Fees Office"
+  },
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "building-2",
+   "link_to": "School Office",
+   "link_type": "Workspace",
+   "title": "School Office"
+  },
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "users-round",
+   "link_to": "Class Teacher",
+   "link_type": "Workspace",
+   "title": "Class Teacher"
+  }
+ ],
+ "modified": "2026-11-19 12:09:33.217421",
+ "modified_by": "Administrator",
+ "name": "onebook_school",
+ "owner": "Administrator",
+ "standard": 1,
+ "user": ""
+}
