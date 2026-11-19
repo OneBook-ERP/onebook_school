@@ -43,7 +43,7 @@ def get_today():
 def greeting(user):
 	hour = now_datetime().hour
 	part = "Good morning" if hour < 12 else "Good afternoon" if hour < 16 else "Good evening"
-	name = frappe.db.get_value("User", user, "first_name") or ""
+	name = frappe.db.get_value("User", user, "full_name") or ""
 	return f"{part}, {name}".strip(", ")
 
 
@@ -59,6 +59,10 @@ def periods_by_no():
 def when(period, now):
 	start, end = get_time(period["start_time"]), get_time(period["end_time"])
 	return "done" if now > end else "now" if start <= now <= end else "later"
+
+
+def hhmm(value):
+	return get_time(value).strftime("%H:%M") if value else ""
 
 
 def item(text, sub=None, action=None, tone=None):
@@ -96,14 +100,15 @@ def teacher_sections(instructor, today):
 		next_marked = next_marked or label == "NEXT"
 		cover_note = f" · cover for {r['cover_for']}" if r["cover_for"] else ""
 		day.append(item(
-			f"{p['label']} {str(p['start_time'])[:5]} · {r['student_group']} · {r['course']}{cover_note}",
+			f"{p['label']} {hhmm(p['start_time'])} · {r['student_group']} · {r['course']}{cover_note}",
 			sub=label or ("done" if state == "done" else None),
 			action=route("Take attendance", f"/desk/student-attendance-tool?student_group={r['student_group']}") if state != "done" else None,
 			tone="alert" if r["cover_for"] else ("now" if label == "NOW" else None),
 		))  # fmt: skip
 	todo = attendance_todo(instructor, today) + marks_todo(instructor)
-	programs = list({frappe.db.get_value("Student Group", r["student_group"], "program") for r in rows} | set(my_programs(instructor)))
-	exam_items = [item(f"{formatdate(e['exam_date'], 'EEE d MMM')} · {e['program']} · {e['course']}", sub=e["exam"]) for e in exams.upcoming(21, programs)[:5]]
+	pairs = my_papers(instructor)
+	mine = [e for e in exams.upcoming(30, sorted({p for p, _c in pairs})) if (e["program"], e["course"]) in pairs]
+	exam_items = [item(f"{formatdate(e['exam_date'], 'EEE d MMM')} · {e['program']} · {e['course']}", sub=f"{e['exam']} · you teach this paper") for e in mine[:6]]
 	return [
 		section("now_next", f"Your periods today ({len(day)})" if day else "Your periods today", "info", day or [item("No periods on the timetable today.")]),
 		section("todo", "To do", "alert", todo),
@@ -111,9 +116,10 @@ def teacher_sections(instructor, today):
 	]
 
 
-def my_programs(instructor):
-	groups = frappe.get_all("Teaching Assignment", filters={"instructor": instructor}, pluck="student_group")
-	return [p for p in {frappe.db.get_value("Student Group", g, "program") for g in groups} if p]
+def my_papers(instructor):
+	"""(class, subject) pairs the teacher teaches, so only their own exam papers are shown."""
+	rows = frappe.get_all("Teaching Assignment", filters={"instructor": instructor}, fields=["student_group", "course"])
+	return {(frappe.db.get_value("Student Group", r.student_group, "program"), r.course) for r in rows}
 
 
 def attendance_todo(instructor, today):
@@ -153,14 +159,18 @@ def marks_todo(instructor):
 def leader_sections(user, today, money_first=False):
 	attention = []
 	periods = periods_by_no()
-	for r in cover.uncovered(today):
+	now = now_datetime().time()
+	open_rows = [r for r in cover.uncovered(today) if periods.get(r["period_no"]) and when(periods[r["period_no"]], now) != "done"]
+	for r in open_rows[:6]:
 		p = periods.get(r["period_no"], {})
 		attention.append(item(
-			f"No teacher: {p.get('label', 'P' + str(r['period_no']))} {str(p.get('start_time', ''))[:5]} · {r['student_group']} · {r['course']}",
+			f"No teacher: {p.get('label', 'P' + str(r['period_no']))} {hhmm(p.get('start_time'))} · {r['student_group']} · {r['course']}",
 			sub=f"{r['instructor_name']} is away",
-			action={"label": "Assign cover", "kind": "cover", "args": {"date": today, "period_no": r["period_no"], "student_group": r["student_group"]}},
+			action={"label": "Assign cover", "kind": "cover", "period_label": p.get("label"), "args": {"date": today, "period_no": r["period_no"], "student_group": r["student_group"]}},
 			tone="alert",
 		))  # fmt: skip
+	if len(open_rows) > 6:
+		attention.append(item(f"+{len(open_rows) - 6} more periods need cover today", action=route("Timetable", "/desk/timetable-slot")))
 	missing, exam = missing_marks()
 	by_teacher = {}
 	for m in missing:

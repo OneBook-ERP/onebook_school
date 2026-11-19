@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import getdate, nowdate
@@ -47,7 +49,9 @@ class TestToday(FrappeTestCase):
 	def test_principal_sees_uncovered_periods(self):
 		if not timetable.slots_for(instructor=self.absent, weekday=self.weekday):
 			self.skipTest("no school today")
-		attention = section(build(self.principal_user), "attention")
+		morning = frappe.utils.get_datetime(f"{self.today} 08:00:00")
+		with patch("onebook_school.school_day.today.now_datetime", return_value=morning):
+			attention = section(build(self.principal_user), "attention")
 		self.assertIsNotNone(attention)
 		covers = [i for i in attention["items"] if (i.get("action") or {}).get("kind") == "cover"]
 		self.assertTrue(any(i["action"]["args"]["student_group"] == self.other for i in covers))

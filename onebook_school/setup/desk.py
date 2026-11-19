@@ -21,15 +21,15 @@ ROLES = ["School Correspondent", "School Principal", "School Accountant", "Schoo
 R, RW, RWS = ("read", "report", "print"), ("read", "report", "print", "write", "create"), ("read", "report", "print", "write", "create", "submit")
 # role -> {doctype: rights}; what each school role needs beyond the standard Education/ERPNext roles it also holds
 RIGHTS = {
-	"School Correspondent": {"Instructor": R, "Attendance": R, "Lead": R, "Sales Invoice": R, "Payment Entry": R, "Student Attendance": R, "Report Card": R, "Mark Entry": R,
+	"School Correspondent": {"Timetable Slot": R, "Exam Schedule": R, "Cover Assignment": RW, "Teaching Assignment": R, "Instructor": R, "Attendance": R, "Lead": R, "Sales Invoice": R, "Payment Entry": R, "Student Attendance": R, "Report Card": R, "Mark Entry": R,
 		"Family Receipt": R, "Certificate Request": R, "Fee Committee Order": RWS, "School Settings": RW},
-	"School Principal": {"Instructor": R, "Attendance": R, "Employee": R, "Lead": R, "Sales Invoice": R, "Payment Entry": R, "Student Attendance": RWS, "Report Card": RW, "Mark Entry": RWS,
+	"School Principal": {"Timetable Slot": RW, "Exam Schedule": RW, "Cover Assignment": RW, "Teaching Assignment": RW, "Instructor": R, "Attendance": R, "Employee": R, "Lead": R, "Sales Invoice": R, "Payment Entry": R, "Student Attendance": RWS, "Report Card": RW, "Mark Entry": RWS,
 		"Certificate Request": RWS, "Family Receipt": R, "Fee Committee Order": R, "Student": RW, "Guardian": RW},
 	"School Accountant": {"Family Receipt": RWS, "Sales Invoice": RWS, "Payment Entry": RWS, "Fee Structure": RWS, "Fee Committee Order": R,
 		"Student": R, "Guardian": R, "Program Enrollment": R},
 	"School Office": {"Lead": RW, "Student": RW, "Guardian": RW, "Program Enrollment": RWS, "Student Applicant": RW, "Certificate Request": RW,
 		"Student Attendance": R, "Report Card": R, "Student Group": R},
-	"Class Teacher": {"Student Attendance": RWS, "Student Group": R, "Student": R, "Guardian": R, "Mark Entry": RWS, "Report Card": RW, "Course": R, "Program": R},
+	"Class Teacher": {"Timetable Slot": R, "Exam Schedule": R, "Cover Assignment": R, "Teaching Assignment": R, "Student Attendance": RWS, "Student Group": R, "Student": R, "Guardian": R, "Mark Entry": RWS, "Report Card": RW, "Course": R, "Program": R},
 }  # fmt: skip
 for _grants in RIGHTS.values():
 	_grants.setdefault("Company", R)  # the School filter on reports and forms
@@ -126,10 +126,12 @@ WORKSPACES = {
 		["# Today", "Present Today", "Absent Today", "Students Enrolled", "# Teaching staff", "Teachers", "Students per Teacher", "Staff Away Today",
 		 "# Learning (latest exam)", "Pass Percentage", "Top Learners (90%+)", "Need Support (below 50%)", "# Office", "Open Enquiries", "Certificates This Month", "Report Cards Ready"],
 		["Attendance Today", "Staff Attendance Today", "Grade Distribution", "Average % by Section", "Students by Class", "Dues by Class"],
-		[dt("Mark Entry", "Mark Entry"), dt("Report Cards", "Report Card"), rpt("UDISE Student Export", "UDISE Student Export"),
+		[dt("Timetable", "Timetable Slot", view="Report Builder"), dt("Exam Schedule", "Exam Schedule"), dt("Cover Today", "Cover Assignment"),
+		 dt("Mark Entry", "Mark Entry"), dt("Report Cards", "Report Card"), rpt("UDISE Student Export", "UDISE Student Export"),
 		 dt("Class Sections", "Student Group"), dt("Attendance", "Student Attendance"), dt("Enquiries", "Lead"), dt("Certificates", "Certificate Request"),
 		 dt("Students", "Student")],
-		{"Academics": [("DocType", "Program"), ("DocType", "Course"), ("DocType", "Student Group"), ("DocType", "Mark Entry"), ("DocType", "Report Card")],
+		{"School Day": [("DocType", "Timetable Slot"), ("DocType", "Teaching Assignment"), ("DocType", "Cover Assignment"), ("DocType", "Exam Schedule"), ("DocType", "School Settings")],
+		 "Academics": [("DocType", "Program"), ("DocType", "Course"), ("DocType", "Student Group"), ("DocType", "Mark Entry"), ("DocType", "Report Card")],
 		 "Returns": [("Report", "UDISE Student Export"), ("DocType", "Fee Committee Order"), ("DocType", "Student")],
 		 "Parents": [("DocType", "Guardian"), ("DocType", "Message Template"), ("DocType", "Circular")]},
 	),
@@ -162,8 +164,9 @@ WORKSPACES = {
 		["Present Today", "Absent Today", "Report Cards Ready", "Top Learners (90%+)", "Need Support (below 50%)", "Pass Percentage"],
 		["Attendance Today", "Average % by Section"],
 		[dt("Take Attendance", "Student Attendance Tool", view="New", color="Green"), dt("Enter Marks", "Mark Entry", view="New", color="Blue"),
+		 dt("My Timetable", "Timetable Slot", view="Report Builder"), dt("Exam Schedule", "Exam Schedule"),
 		 dt("Report Cards", "Report Card"), dt("My Sections", "Student Group"), dt("Students", "Student")],
-		{"Class": [("DocType", "Student Group"), ("DocType", "Student"), ("DocType", "Student Attendance")],
+		{"Class": [("DocType", "Timetable Slot"), ("DocType", "Student Group"), ("DocType", "Student"), ("DocType", "Student Attendance")],
 		 "Assessment": [("DocType", "Mark Entry"), ("DocType", "Report Card")]},
 	),
 }
@@ -174,6 +177,9 @@ def build():
 		if not frappe.db.exists("Role", role):
 			frappe.get_doc({"doctype": "Role", "role_name": role, "desk_access": 1}).insert(ignore_permissions=True)
 	rights()
+	from onebook_school.setup.today_block import build as today_block
+
+	today_block()
 	for name, spec in CARDS.items():
 		number_card(name, spec)
 	for name, spec in CHARTS.items():
@@ -230,7 +236,8 @@ def chart(name, spec):
 
 
 def workspace(name, seq, icon, roles, intro, cards, charts, shortcuts, links):
-	blocks = [{"id": "hd", "type": "header", "data": {"text": f'<span class="h4"><b>{name}</b></span>', "col": 12}},
+	blocks = [{"id": "td", "type": "custom_block", "data": {"custom_block_name": "Today", "col": 12}},
+			  {"id": "hd", "type": "header", "data": {"text": f'<span class="h5"><b>{name} dashboard</b></span>', "col": 12}},
 			  {"id": "pg", "type": "paragraph", "data": {"text": f'<span class="text-muted">{intro}</span>', "col": 12}}]  # fmt: skip
 	for i, c in enumerate(cards):
 		if c.startswith("# "):
@@ -250,17 +257,18 @@ def workspace(name, seq, icon, roles, intro, cards, charts, shortcuts, links):
 		link_rows += [{"type": "Link", "label": target, "link_type": kind, "link_to": target, "is_query_report": 1 if kind == "Report" else 0} for kind, target in items]
 	values = {
 		"label": name, "title": name, "module": DESK_MODULE[name], "app": APP, "public": 1, "icon": icon, "sequence_id": 10 + seq, "is_hidden": 0,
-		"content": json.dumps(blocks), "roles": [{"role": r} for r in roles],
+		"content": json.dumps(blocks), "roles": [{"role": r} for r in roles], "custom_blocks": [{"custom_block_name": "Today", "label": "Today"}],
 		"number_cards": [{"number_card_name": c, "label": c} for c in cards], "charts": [{"chart_name": c, "label": c} for c in charts],
 		"shortcuts": shortcuts, "links": link_rows,
 	}  # fmt: skip
-	upsert("Workspace", name, values, child_tables=("roles", "number_cards", "charts", "shortcuts", "links"))
+	upsert("Workspace", name, values, child_tables=("roles", "number_cards", "charts", "shortcuts", "links", "custom_blocks"))
 
 
 # which role desk owns each school DocType or report, so opening it keeps that desk's sidebar
 OWNER = {
 	"Family Receipt": "Fees Office", "Fee Committee Order": "Fees Office", "Mark Entry": "Class Teacher", "Report Card": "Class Teacher",
-	"School Settings": "Correspondent", "UDISE Student Export": "Principal",
+	"School Settings": "Correspondent", "UDISE Student Export": "Principal", "Timetable Slot": "Principal", "Teaching Assignment": "Principal",
+	"Cover Assignment": "Principal", "Exam Schedule": "Principal",
 }  # fmt: skip
 
 

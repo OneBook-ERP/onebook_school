@@ -42,6 +42,12 @@ def uncovered(date):
 	return sorted(rows, key=lambda r: (r["period_no"], r["student_group"]))
 
 
+@frappe.whitelist()
+def suggest_cover(date, period_no, student_group):
+	frappe.has_permission("Cover Assignment", "create", throw=True)
+	return suggest(date, period_no, student_group)[:8]
+
+
 def suggest(date, period_no, student_group):
 	period_no = cint(period_no)
 	weekday = weekday_of(date)

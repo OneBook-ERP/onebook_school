@@ -16,11 +16,19 @@ Site: `http://aanoor.localhost:<port>` (this bench; see "Before you start"). Eve
 
 1. The bench must run on a port your browser reaches. Port 8003 on the laptop is taken by another bench, so forward
    this container's port (VS Code: Ports panel, Forward a Port, `8003` or `8013`) and open `http://aanoor.localhost:<local port>`.
-2. Log in once as each user you will show, so the first screen is not a cold start.
-3. PDF download needs the site name to resolve inside the container; use **Print** (browser print to PDF) instead of
+2. **On the demo morning** run `bench --site aanoor.localhost execute onebook_school.demo.refresh_today` so today has
+   student and staff attendance, absent teachers with uncovered periods, and a few receipts dated today.
+3. Log in once as each user you will show, so the first screen is not a cold start.
+4. PDF download needs the site name to resolve inside the container; use **Print** (browser print to PDF) instead of
    **Get PDF** during the demo.
 
 ## The click path (about 25 minutes)
+
+0. **Open on Today (3 min).** Principal (`principal@`): the first block is "Needs your attention": periods with no
+   teacher because S. Ramesh, T. Sumathi and V. Jayanthi are away; click **Assign cover**, pick the best free teacher,
+   the period disappears. Then marks pending from P. Anitha (VIII - B Maths), the day (present %, staff away), Half
+   Yearly exams in N days, fees by class. Then log in as `teacher.vi@` (P. Anitha): her periods today with NOW and NEXT,
+   the cover she was given, "Enter Quarterly marks: VIII - B Maths", her own exam papers.
 
 1. **Principal's morning (3 min), as correspondent.** Correspondent workspace: Fees Collected Today, Outstanding
    Fees (about Rs 22.8 lakh), Present Today (about 95%), Students Enrolled (616). Charts: Dues by Class (Std IX has the
