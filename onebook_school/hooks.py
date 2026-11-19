@@ -283,5 +283,10 @@ after_migrate = "onebook_school.install.after_migrate"
 
 doc_events = {
 	"Fee Structure": {"validate": "onebook_school.fees.fee_cap.check_fee_structure"},
-	"Sales Invoice": {"before_validate": "onebook_school.fees.sibling.apply_sibling_discount"},
+	"Sales Invoice": {
+		"before_validate": [
+			"onebook_school.fees.invoice.set_class",
+			"onebook_school.fees.sibling.apply_sibling_discount",
+		]
+	},
 }

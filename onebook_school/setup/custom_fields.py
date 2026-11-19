@@ -28,5 +28,10 @@ STUDENT_GROUP = [
 ]  # fmt: skip
 
 
+SALES_INVOICE = [
+	{"fieldname": "obs_program", "label": "Class", "fieldtype": "Link", "options": "Program", "insert_after": "student", "read_only": 1, "in_standard_filter": 1},
+]  # fmt: skip
+
+
 def create_all():
-	create_custom_fields({"Student": STUDENT, "Student Group": STUDENT_GROUP}, update=True)
+	create_custom_fields({"Student": STUDENT, "Student Group": STUDENT_GROUP, "Sales Invoice": SALES_INVOICE}, update=True)

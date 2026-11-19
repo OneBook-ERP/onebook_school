@@ -157,3 +157,14 @@ def section(name, program_name, students):
 			}
 		).insert(ignore_permissions=True)  # fmt: skip
 	return name
+
+
+def holiday_list():
+	"""A Sundays holiday list as the test school's default (Education checks attendance dates against it)."""
+	name = "OBS Test Holidays"
+	if not frappe.db.exists("Holiday List", name):
+		doc = frappe.get_doc({"doctype": "Holiday List", "holiday_list_name": name, "from_date": "2026-01-01", "to_date": "2032-12-31", "weekly_off": "Sunday"})
+		doc.get_weekly_off_dates()
+		doc.insert(ignore_permissions=True)
+	frappe.db.set_value("Company", company(), "default_holiday_list", name)
+	return name
