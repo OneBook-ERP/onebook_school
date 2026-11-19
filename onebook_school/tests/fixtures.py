@@ -232,3 +232,11 @@ def mark_staff(instructor_name, status, date=None):
 	doc.insert(ignore_permissions=True)
 	doc.submit()
 	return doc
+
+
+def user(email, roles):
+	if not frappe.db.exists("User", email):
+		doc = frappe.get_doc({"doctype": "User", "email": email, "first_name": email.split("@")[0], "send_welcome_email": 0, "user_type": "System User"})
+		doc.insert(ignore_permissions=True)
+	frappe.get_doc("User", email).add_roles(*roles)
+	return email
