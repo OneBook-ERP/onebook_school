@@ -19,13 +19,35 @@ def has_elder_sibling(student):
 			pluck="parent",
 		)
 	)
+	year = current_year(student)
 	for sibling in siblings:
-		row = frappe.db.get_value("Student", sibling, ["enabled", "date_of_birth"], as_dict=True)
-		if not (row and row.enabled and row.date_of_birth and getdate(row.date_of_birth) < getdate(dob)):
-			continue
-		if frappe.db.exists("Program Enrollment", {"student": sibling, "docstatus": 1}):
+		if born_earlier(sibling, dob) and on_roll(sibling, year):
 			return True
 	return False
+
+
+def current_year(student):
+	return frappe.db.get_value(
+		"Program Enrollment", {"student": student, "docstatus": 1}, "academic_year", order_by="enrollment_date desc, creation desc"
+	)
+
+
+def born_earlier(sibling, dob):
+	row = frappe.db.get_value("Student", sibling, ["enabled", "date_of_birth"], as_dict=True)
+	return bool(row and row.enabled and row.date_of_birth and getdate(row.date_of_birth) < getdate(dob))
+
+
+def on_roll(student, academic_year):
+	"""Still studying here in `academic_year`: no TC or leaving date, campus status on roll (or not yet tracked),
+	and a submitted enrollment for that year."""
+	from campus.student_services.lifecycle_rules import ON_ROLL
+
+	row = frappe.db.get_value("Student", student, ["date_of_leaving", "leaving_certificate_number", "oc_academic_status"], as_dict=True)
+	if not row or row.date_of_leaving or row.leaving_certificate_number:
+		return False
+	if row.oc_academic_status and row.oc_academic_status not in ON_ROLL:
+		return False
+	return bool(academic_year and frappe.db.exists("Program Enrollment", {"student": student, "academic_year": academic_year, "docstatus": 1}))
 
 
 def apply_sibling_discount(doc, method=None):

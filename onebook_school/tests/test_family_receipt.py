@@ -58,3 +58,45 @@ class TestFamilyReceipt(FrappeTestCase):
 		for row in doc.allocations:
 			self.assertEqual(frappe.db.get_value("Payment Entry", row.payment_entry, "docstatus"), 2)
 		self.assertEqual(flt(frappe.db.get_value("Sales Invoice", self.old.name, "outstanding_amount")), 5000)
+
+
+class TestFamilyReceiptSafety(FrappeTestCase):
+	def setUp(self):
+		fx.school_settings(sibling_discount_percent=0)
+		tag = frappe.generate_hash(length=5)
+		self.child = fx.student(f"Kid{tag}", "2016-02-02")
+		self.guardian = fx.guardian(f"Dad {tag}", [self.child])
+		self.invoice = fx.fee_invoice(self.child, 3000, nowdate())
+		stranger = fx.student(f"Other{tag}", "2016-03-03")
+		fx.guardian(f"Stranger {tag}", [stranger])
+		self.strangers_invoice = fx.fee_invoice(stranger, 2000, nowdate())
+
+	def test_payment_goes_to_the_modes_account(self):
+		bank = fx.upi_mode()
+		doc = receipt(self.guardian, 3000)
+		doc.mode_of_payment = bank["mode"]
+		doc.insert()
+		doc.submit()
+		self.assertEqual(frappe.db.get_value("Payment Entry", doc.allocations[0].payment_entry, "paid_to"), bank["account"])
+
+	def test_amount_received_must_equal_allocated(self):
+		doc = receipt(self.guardian, 3000)
+		doc.amount_paid = 3500
+		with self.assertRaises(frappe.ValidationError):
+			doc.insert()
+
+	def test_other_familys_invoice_refused(self):
+		doc = receipt(self.guardian, 3000)
+		doc.append("allocations", {"student": self.child, "sales_invoice": self.strangers_invoice.name, "allocated_amount": 100})
+		doc.amount_paid = 3100
+		with self.assertRaises(frappe.ValidationError):
+			doc.insert()
+
+	def test_invoice_paid_meanwhile_refused_on_submit(self):
+		first = receipt(self.guardian, 3000)
+		first.insert()
+		second = receipt(self.guardian, 3000)
+		second.insert()
+		first.submit()
+		with self.assertRaises(frappe.ValidationError):
+			second.submit()

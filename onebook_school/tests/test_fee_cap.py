@@ -57,8 +57,23 @@ class TestFeeCap(FrappeTestCase):
 	def test_term_structures_sum_against_year_cap(self):
 		committee_order({"Tuition": 30000}, program="OBS Std XI")
 		first = fx.fee_structure("OBS Std XI", {"Tuition": 15000})
-		first.academic_term = None
 		first.insert()
+		first.submit()
 		second = fx.fee_structure("OBS Std XI", {"Tuition": 16000})
 		with self.assertRaises(frappe.ValidationError):
 			second.insert()
+
+	def test_draft_structure_does_not_count(self):
+		committee_order({"Tuition": 30000}, program="OBS Std XII")
+		fx.fee_structure("OBS Std XII", {"Tuition": 20000}).insert()
+		self.assertTrue(fx.fee_structure("OBS Std XII", {"Tuition": 20000}).insert().name)
+
+	def test_student_categories_counted_separately(self):
+		committee_order({"Tuition": 30000}, program="OBS Std V")
+		for category in ("OBS General", "OBS RTE"):
+			if not frappe.db.exists("Student Category", category):
+				frappe.get_doc({"doctype": "Student Category", "category": category}).insert(ignore_permissions=True)
+			doc = fx.fee_structure("OBS Std V", {"Tuition": 20000})
+			doc.student_category = category
+			doc.insert()
+			doc.submit()

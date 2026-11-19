@@ -65,11 +65,12 @@ def check_fee_structure(doc, method=None):
 
 
 def charged_elsewhere(doc):
-	"""Per category, what the class's other live Fee Structures of the year already charge (term structures add up)."""
+	"""Per category, what the class's other submitted Fee Structures of the year already charge for the same student
+	category (term structures add up; General and RTE structures are separate)."""
 	others = frappe.get_all(
 		"Fee Structure",
-		filters={"company": doc.company, "program": doc.program, "academic_year": doc.academic_year,
-				 "docstatus": ["<", 2], "name": ["!=", doc.name or ""]},
+		filters={"company": doc.company, "program": doc.program, "academic_year": doc.academic_year, "docstatus": 1,
+				 "student_category": doc.student_category or ["is", "not set"], "name": ["!=", doc.name or ""]},
 		pluck="name",
 	)  # fmt: skip
 	charged = {}

@@ -49,3 +49,27 @@ class TestSiblingConcession(FrappeTestCase):
 		invoice.docstatus = 1
 		apply_sibling_discount(invoice)
 		self.assertFalse(invoice.additional_discount_percentage)
+
+
+class TestSiblingLeavers(FrappeTestCase):
+	def setUp(self):
+		fx.school_settings(sibling_discount_percent=10)
+		tag = frappe.generate_hash(length=5)
+		self.elder = fx.student(f"Big{tag}", "2015-01-01")
+		self.younger = fx.student(f"Small{tag}", "2019-01-01")
+		fx.guardian(f"Family {tag}", [self.elder, self.younger])
+
+	def test_elder_with_tc_no_discount(self):
+		frappe.db.set_value("Student", self.elder, {"date_of_leaving": "2031-07-01", "leaving_certificate_number": "TC/1"})
+		self.assertFalse(has_elder_sibling(self.younger))
+
+	def test_elder_withdrawn_no_discount(self):
+		frappe.db.set_value("Student", self.elder, "oc_academic_status", "Withdrawn")
+		self.assertFalse(has_elder_sibling(self.younger))
+
+	def test_elder_enrolled_only_in_another_year_no_discount(self):
+		frappe.db.set_value("Program Enrollment", {"student": self.elder}, "academic_year", fx.academic_year(fx.NEXT_YEAR, "2032-06-01", "2033-04-30"))
+		self.assertFalse(has_elder_sibling(self.younger))
+
+	def test_elder_on_roll_same_year_discount(self):
+		self.assertTrue(has_elder_sibling(self.younger))

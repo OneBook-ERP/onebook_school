@@ -165,17 +165,25 @@ def build():
 
 
 def rights():
-	from frappe.permissions import add_permission, update_permission_property
-
 	for role, grants in RIGHTS.items():
 		for doctype, perms in grants.items():
-			if not frappe.db.exists("DocType", doctype):
-				continue
-			add_permission(doctype, role, 0)
-			for perm in perms:
-				if perm == "submit" and not frappe.get_meta(doctype).is_submittable:
-					continue
-				update_permission_property(doctype, role, 0, perm, 1, validate=False)
+			if frappe.db.exists("DocType", doctype):
+				grant(doctype, role, perms)
+
+
+def grant(doctype, role, perms):
+	"""Give `role` these rights on `doctype` once. A role that already has a row keeps it exactly as the school's admin
+	left it, so a migrate never undoes a revocation. Note: the first Custom DocPerm on a doctype freezes its standard
+	permissions on this site (Frappe copies them over), so later upstream permission changes need a manual review."""
+	from frappe.permissions import add_permission
+
+	if frappe.db.exists("Custom DocPerm", {"parent": doctype, "role": role, "permlevel": 0}):
+		return
+	add_permission(doctype, role, 0)
+	submittable = frappe.get_meta(doctype).is_submittable
+	values = {p: 1 for p in perms if p != "submit" or submittable}
+	frappe.db.set_value("Custom DocPerm", {"parent": doctype, "role": role, "permlevel": 0}, values)
+	frappe.clear_cache(doctype=doctype)
 
 
 def number_card(name, spec):

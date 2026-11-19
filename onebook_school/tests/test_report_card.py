@@ -79,3 +79,23 @@ class TestReportCard(FrappeTestCase):
 		rows = [r for r in card.subjects if r.course == "OBS Hindi"]
 		self.assertEqual(len(rows), 1)
 		self.assertEqual(rows[0].marks, 60)
+
+	def test_blank_marks_refused_on_submit(self):
+		doc = mark_entry(self.group, "OBS Art", {self.a: 50})
+		doc.rows[1].marks = None
+		doc.insert()
+		with self.assertRaises(frappe.ValidationError):
+			doc.submit()
+
+	def test_zero_max_marks_refused(self):
+		with self.assertRaises(frappe.ValidationError):
+			mark_entry(self.group, "OBS Music", {self.a: 0, self.b: 0}, max_marks=0).insert()
+
+	def test_card_recomputes_when_edited(self):
+		mark_entry(self.group, "OBS Physics", {self.a: 50, self.b: 50}).insert().submit()
+		card = frappe.get_doc("Report Card", {"student": self.a, "academic_year": fx.YEAR, "exam": EXAM})
+		row = next(r for r in card.subjects if r.course == "OBS Physics")
+		row.marks = 90
+		card.save()
+		self.assertEqual(card.total, sum(r.marks for r in card.subjects))
+		self.assertEqual(row.grade, "A2")

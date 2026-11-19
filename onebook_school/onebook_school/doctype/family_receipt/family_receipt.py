@@ -23,28 +23,42 @@ class FamilyReceipt(Document):
 		self.total_allocated = sum(flt(r.allocated_amount) for r in self.allocations)
 
 	def validate(self):
+		wards = set(frappe.get_all("Student Guardian", filters={"guardian": self.guardian, "parenttype": "Student"}, pluck="parent"))
 		for row in self.allocations:
-			invoice = frappe.db.get_value(
-				"Sales Invoice", row.sales_invoice, ["outstanding_amount", "student", "docstatus"], as_dict=True
-			)
-			if not invoice or invoice.docstatus != 1:
-				frappe.throw(_("Row {0}: {1} is not a submitted invoice.").format(row.idx, row.sales_invoice))
-			row.outstanding_amount = flt(invoice.outstanding_amount)
-			if flt(row.allocated_amount) <= 0 or flt(row.allocated_amount) > row.outstanding_amount:
-				frappe.throw(
-					_("Row {0}: paying {1} on {2}, which has {3} outstanding.").format(
-						row.idx, row.allocated_amount, row.sales_invoice, row.outstanding_amount
-					)
-				)
+			self.check_row(row, wards)
 		self.set_total()
-		if self.total_allocated > flt(self.amount_paid):
-			frappe.throw(_("Allocated {0} is more than the amount received {1}.").format(self.total_allocated, self.amount_paid))
+		if flt(self.total_allocated, 2) != flt(self.amount_paid, 2):
+			frappe.throw(
+				_("Amount received {0} must equal the total paid against the children's invoices {1}.").format(
+					self.amount_paid, self.total_allocated
+				)
+			)
+
+	def check_row(self, row, wards, for_update=False):
+		invoice = frappe.db.get_value(
+			"Sales Invoice", row.sales_invoice, ["outstanding_amount", "student", "company", "docstatus"], as_dict=True, for_update=for_update
+		)
+		if not invoice or invoice.docstatus != 1:
+			frappe.throw(_("Row {0}: {1} is not a submitted invoice.").format(row.idx, row.sales_invoice))
+		if invoice.student not in wards or invoice.student != row.student or invoice.company != self.company:
+			frappe.throw(_("Row {0}: {1} is not a fee invoice of this parent's children in {2}.").format(row.idx, row.sales_invoice, self.company))
+		row.outstanding_amount = flt(invoice.outstanding_amount)
+		if flt(row.allocated_amount) <= 0 or flt(row.allocated_amount) > row.outstanding_amount:
+			frappe.throw(
+				_("Row {0}: paying {1} on {2}, which has {3} outstanding.").format(
+					row.idx, row.allocated_amount, row.sales_invoice, row.outstanding_amount
+				)
+			)
 
 	def on_submit(self):
 		from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
+		from erpnext.accounts.doctype.sales_invoice.sales_invoice import get_bank_cash_account
 
+		wards = set(frappe.get_all("Student Guardian", filters={"guardian": self.guardian, "parenttype": "Student"}, pluck="parent"))
+		account = get_bank_cash_account(self.mode_of_payment, self.company).get("account")
 		for row in self.allocations:
-			entry = get_payment_entry("Sales Invoice", row.sales_invoice, party_amount=flt(row.allocated_amount))
+			self.check_row(row, wards, for_update=True)  # locks the invoice: a receipt submitted meanwhile is seen
+			entry = get_payment_entry("Sales Invoice", row.sales_invoice, party_amount=flt(row.allocated_amount), bank_account=account)
 			entry.mode_of_payment = self.mode_of_payment
 			entry.posting_date = self.posting_date
 			entry.reference_no = self.reference_no or self.name

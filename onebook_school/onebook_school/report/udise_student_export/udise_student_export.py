@@ -37,13 +37,16 @@ def execute(filters=None):
 
 def get_rows(filters):
 	udise = frappe.db.get_single_value("School Settings", "udise_code")
+	company = filters.company or frappe.db.get_single_value("School Settings", "company")
 	group_filters = {"academic_year": filters.academic_year, "group_based_on": "Batch", "disabled": 0}
+	if company:
+		group_filters["oc_company"] = company
 	if filters.student_group:
 		group_filters["name"] = filters.student_group
 	if filters.program:
 		group_filters["program"] = filters.program
 	rows = []
-	for group in frappe.get_all("Student Group", filters=group_filters, fields=["name", "program"], order_by="program, name"):
+	for group in frappe.get_list("Student Group", filters=group_filters, fields=["name", "program"], order_by="program, name"):
 		members = frappe.get_all(
 			"Student Group Student",
 			filters={"parent": group.name, "parenttype": "Student Group", "active": 1},

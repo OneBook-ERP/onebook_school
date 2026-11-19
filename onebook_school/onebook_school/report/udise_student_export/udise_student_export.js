@@ -1,5 +1,7 @@
 frappe.query_reports["UDISE Student Export"] = {
 	filters: [
+		{ fieldname: "company", label: __("School"), fieldtype: "Link", options: "Company",
+		  default: frappe.defaults.get_user_default("company") },
 		{ fieldname: "academic_year", label: __("Academic Year"), fieldtype: "Link", options: "Academic Year", reqd: 1,
 		  default: frappe.defaults.get_user_default("academic_year") },
 		{ fieldname: "program", label: __("Class"), fieldtype: "Link", options: "Program" },

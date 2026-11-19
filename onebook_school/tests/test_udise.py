@@ -45,3 +45,7 @@ class TestUdiseExport(FrappeTestCase):
 		labels = [c["label"] for c in columns]
 		self.assertEqual(labels[0], "UDISE Code")
 		self.assertEqual(labels[-1], "Issues")
+
+	def test_other_company_excluded(self):
+		rows = execute({"academic_year": fx.YEAR, "student_group": self.group_a, "company": "Some Other School"})[1]
+		self.assertEqual(rows, [])

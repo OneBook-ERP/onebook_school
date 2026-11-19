@@ -8,6 +8,8 @@ from frappe.utils import flt
 def get_outstanding(guardian, company):
 	"""Unpaid submitted fee invoices of `guardian`'s students in `company`, oldest due date first."""
 	frappe.has_permission("Guardian", "read", guardian, throw=True)
+	frappe.has_permission("Sales Invoice", "read", throw=True)
+	frappe.has_permission("Company", "read", company, throw=True)
 	students = frappe.get_all(
 		"Student Guardian", filters={"guardian": guardian, "parenttype": "Student"}, pluck="parent"
 	)

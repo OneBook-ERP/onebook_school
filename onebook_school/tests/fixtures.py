@@ -168,3 +168,16 @@ def holiday_list():
 		doc.insert(ignore_permissions=True)
 	frappe.db.set_value("Company", company(), "default_holiday_list", name)
 	return name
+
+
+def upi_mode():
+	"""Mode of Payment "OBS UPI" posting to a bank account of the test school."""
+	parent = frappe.db.get_value("Account", {"company": company(), "account_type": "Bank", "is_group": 1}) or frappe.db.get_value(
+		"Account", {"company": company(), "account_name": "Bank Accounts"}
+	)
+	name = f"OBS UPI Bank - {ABBR}"
+	if not frappe.db.exists("Account", name):
+		frappe.get_doc({"doctype": "Account", "account_name": "OBS UPI Bank", "parent_account": parent, "company": company(), "account_type": "Bank", "account_currency": "INR"}).insert(ignore_permissions=True)
+	if not frappe.db.exists("Mode of Payment", "OBS UPI"):
+		frappe.get_doc({"doctype": "Mode of Payment", "mode_of_payment": "OBS UPI", "type": "Bank", "accounts": [{"company": company(), "default_account": name}]}).insert(ignore_permissions=True)
+	return {"mode": "OBS UPI", "account": name}
