@@ -13,6 +13,20 @@ MODULE = "OneBook School"
 
 ROLES = ["School Correspondent", "School Principal", "School Accountant", "School Office", "Class Teacher"]
 
+R, RW, RWS = ("read", "report", "print"), ("read", "report", "print", "write", "create"), ("read", "report", "print", "write", "create", "submit")
+# role -> {doctype: rights}; what each school role needs beyond the standard Education/ERPNext roles it also holds
+RIGHTS = {
+	"School Correspondent": {"Lead": R, "Sales Invoice": R, "Payment Entry": R, "Student Attendance": R, "Report Card": R, "Mark Entry": R,
+		"Family Receipt": R, "Certificate Request": R, "Fee Committee Order": RWS, "School Settings": RW},
+	"School Principal": {"Lead": R, "Sales Invoice": R, "Payment Entry": R, "Student Attendance": RWS, "Report Card": RW, "Mark Entry": RWS,
+		"Certificate Request": RWS, "Family Receipt": R, "Fee Committee Order": R, "Student": RW, "Guardian": RW},
+	"School Accountant": {"Family Receipt": RWS, "Sales Invoice": RWS, "Payment Entry": RWS, "Fee Structure": RWS, "Fee Committee Order": R,
+		"Student": R, "Guardian": R, "Program Enrollment": R},
+	"School Office": {"Lead": RW, "Student": RW, "Guardian": RW, "Program Enrollment": RWS, "Student Applicant": RW, "Certificate Request": RW,
+		"Student Attendance": R, "Report Card": R, "Student Group": R},
+	"Class Teacher": {"Student Attendance": RWS, "Student Group": R, "Student": R, "Guardian": R, "Mark Entry": RWS, "Report Card": RW, "Course": R, "Program": R},
+}  # fmt: skip
+
 TODAY = ["Timespan", "today"]
 MONTH = ["Timespan", "this month"]
 
@@ -137,6 +151,7 @@ def build():
 	for role in ROLES:
 		if not frappe.db.exists("Role", role):
 			frappe.get_doc({"doctype": "Role", "role_name": role, "desk_access": 1}).insert(ignore_permissions=True)
+	rights()
 	for name, spec in CARDS.items():
 		number_card(name, spec)
 	for name, spec in CHARTS.items():
@@ -147,6 +162,20 @@ def build():
 		desktop_icon(name, spec[0], spec[1], seq)
 	dock()
 	frappe.clear_cache()
+
+
+def rights():
+	from frappe.permissions import add_permission, update_permission_property
+
+	for role, grants in RIGHTS.items():
+		for doctype, perms in grants.items():
+			if not frappe.db.exists("DocType", doctype):
+				continue
+			add_permission(doctype, role, 0)
+			for perm in perms:
+				if perm == "submit" and not frappe.get_meta(doctype).is_submittable:
+					continue
+				update_permission_property(doctype, role, 0, perm, 1, validate=False)
 
 
 def number_card(name, spec):
