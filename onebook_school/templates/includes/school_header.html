@@ -1,9 +1,34 @@
-{%- set s = frappe.get_cached_doc("School Settings") if frappe.db.exists("DocType", "School Settings") else None -%}
-<div style="display:flex;align-items:center;gap:14px;border-bottom:2px solid #8e1b6e;padding-bottom:8px;margin-bottom:12px">
-	{%- if s and s.logo %}<img src="{{ s.logo }}" style="height:70px">{% endif %}
+{%- set s = frappe.get_cached_doc("School Settings") -%}
+<style>
+	.obs { font-family: "Inter", "Noto Sans Tamil", "Helvetica Neue", Arial, sans-serif; color: #1f2430; font-size: 12px; line-height: 1.45; }
+	.obs-head { display: flex; align-items: center; gap: 16px; padding: 4px 0 12px; border-bottom: 3px solid #a3197b; }
+	.obs-head img { height: 74px; width: 74px; object-fit: contain; }
+	.obs-head .name { font-size: 19px; font-weight: 700; color: #a3197b; letter-spacing: .2px; }
+	.obs-head .tamil { font-size: 13px; color: #33384a; margin-top: 2px; }
+	.obs-head .addr { font-size: 10.5px; color: #5d6375; margin-top: 4px; }
+	.obs-band { height: 4px; margin: 3px 0 16px; background: linear-gradient(90deg, #2b6aa6 0 20%, #7cb342 20% 40%, #e53935 40% 60%, #7b1f6a 60% 80%, #f2c230 80% 100%); }
+	.obs-title { text-align: center; font-size: 15px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin: 0 0 4px; }
+	.obs-sub { text-align: center; color: #5d6375; font-size: 11px; margin-bottom: 14px; }
+	.obs-facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 28px; margin: 0 0 14px; padding: 10px 14px; background: #f7f4f8; border-radius: 6px; }
+	.obs-facts div span { color: #5d6375; display: inline-block; min-width: 110px; }
+	.obs table.obs-table { width: 100%; border-collapse: collapse; margin: 6px 0 12px; }
+	.obs .obs-table th { background: #a3197b; color: #fff; font-weight: 600; padding: 7px 8px; text-align: left; font-size: 11.5px; }
+	.obs .obs-table td { padding: 6px 8px; border-bottom: 1px solid #e6e2ea; }
+	.obs .obs-table tr:nth-child(even) td { background: #fbfafc; }
+	.obs .num { text-align: right; font-variant-numeric: tabular-nums; }
+	.obs .center { text-align: center; }
+	.obs .total td { font-weight: 700; border-top: 2px solid #a3197b; background: #fff !important; }
+	.obs-note { font-size: 10.5px; color: #5d6375; margin-top: 8px; }
+	.obs-signs { display: flex; justify-content: space-between; margin-top: 56px; font-size: 11.5px; }
+	.obs-signs div { width: 30%; text-align: center; border-top: 1px solid #9aa0ae; padding-top: 5px; }
+	.obs-pill { display: inline-block; padding: 2px 10px; border-radius: 10px; background: #f3e3ef; color: #a3197b; font-weight: 700; }
+</style>
+<div class="obs-head">
+	{%- if s.logo %}<img src="{{ s.logo }}" alt="">{% endif %}
 	<div>
-		<div style="font-size:18px;font-weight:700;color:#8e1b6e">{{ (s and s.school_name) or doc.company }}</div>
-		{%- if s and s.school_name_tamil %}<div style="font-size:14px">{{ s.school_name_tamil }}</div>{% endif %}
-		<div style="font-size:11px;color:#555">{{ (s and s.address) or "" }}{% if s and s.udise_code %} &middot; UDISE {{ s.udise_code }}{% endif %}</div>
+		<div class="name">{{ s.school_name or doc.company }}</div>
+		{%- if s.school_name_tamil %}<div class="tamil">{{ s.school_name_tamil }}</div>{% endif %}
+		<div class="addr">{{ s.address or "" }}{% if s.board %} &middot; {{ s.board }}{% endif %}{% if s.udise_code %} &middot; UDISE {{ s.udise_code }}{% endif %}</div>
 	</div>
 </div>
+<div class="obs-band"></div>

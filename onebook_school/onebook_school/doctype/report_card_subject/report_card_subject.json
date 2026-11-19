@@ -1,0 +1,72 @@
+{
+ "doctype": "DocType",
+ "name": "Report Card Subject",
+ "module": "OneBook School",
+ "engine": "InnoDB",
+ "custom": 0,
+ "istable": 1,
+ "issingle": 0,
+ "is_submittable": 0,
+ "editable_grid": 1,
+ "field_order": [
+  "course",
+  "max_marks",
+  "marks",
+  "absent",
+  "grade",
+  "mark_entry"
+ ],
+ "fields": [
+  {
+   "fieldname": "course",
+   "fieldtype": "Link",
+   "label": "Subject",
+   "options": "Course",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "max_marks",
+   "fieldtype": "Float",
+   "label": "Max",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "marks",
+   "fieldtype": "Float",
+   "label": "Marks",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "absent",
+   "fieldtype": "Check",
+   "label": "Absent",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "grade",
+   "fieldtype": "Data",
+   "label": "Grade",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "mark_entry",
+   "fieldtype": "Link",
+   "label": "Mark Entry",
+   "options": "Mark Entry",
+   "read_only": 1
+  }
+ ],
+ "autoname": "",
+ "title_field": "",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "states": [],
+ "modified": "2026-11-19 12:00:00.000000",
+ "owner": "Administrator",
+ "permissions": []
+}

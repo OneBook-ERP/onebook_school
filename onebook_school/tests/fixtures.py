@@ -135,3 +135,25 @@ def cash_mode():
 		mode.append("accounts", {"company": company(), "default_account": account})
 		mode.save(ignore_permissions=True)
 	return "Cash"
+
+
+def course(name):
+	if not frappe.db.exists("Course", name):
+		frappe.get_doc({"doctype": "Course", "course_name": name, "oc_company": company()}).insert(ignore_permissions=True)
+	return name
+
+
+def section(name, program_name, students):
+	"""A batch-based Student Group (class section) holding `students` in roll order."""
+	if not frappe.db.exists("Student Batch Name", name[-1]):
+		frappe.get_doc({"doctype": "Student Batch Name", "batch_name": name[-1]}).insert(ignore_permissions=True)
+	if not frappe.db.exists("Student Group", name):
+		frappe.get_doc(
+			{
+				"doctype": "Student Group", "student_group_name": name, "group_based_on": "Batch",
+				"academic_year": academic_year(), "program": program(program_name), "batch": name[-1],
+				"oc_company": company(),
+				"students": [{"student": s, "group_roll_number": i + 1, "active": 1} for i, s in enumerate(students)],
+			}
+		).insert(ignore_permissions=True)  # fmt: skip
+	return name
