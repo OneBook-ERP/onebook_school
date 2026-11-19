@@ -121,7 +121,9 @@ def users(ctx):
 
 def module_profile():
 	"""School staff see the school's own desk: every other module is blocked (DocType rights are unaffected)."""
-	keep = {"OneBook School"}
+	from onebook_school.setup.desk import DESK_MODULE
+
+	keep = {"OneBook School", *DESK_MODULE.values()}
 	blocked = [m for m in frappe.get_all("Module Def", pluck="name") if m not in keep]
 	if frappe.db.exists("Module Profile", MODULE_PROFILE):
 		doc = frappe.get_doc("Module Profile", MODULE_PROFILE)

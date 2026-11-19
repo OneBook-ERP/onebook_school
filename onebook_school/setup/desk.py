@@ -10,6 +10,11 @@ import frappe
 
 APP = "onebook_school"
 MODULE = "OneBook School"
+# Frappe keeps one sidebar per module, so each role desk is its own module (its DocTypes stay in OneBook School).
+DESK_MODULE = {
+	"Correspondent": "School Correspondent", "Principal": "School Principal", "Fees Office": "School Fees Office",
+	"School Office": "School Front Office", "Class Teacher": "School Class Teacher",
+}  # fmt: skip
 
 ROLES = ["School Correspondent", "School Principal", "School Accountant", "School Office", "Class Teacher"]
 
@@ -26,6 +31,8 @@ RIGHTS = {
 		"Student Attendance": R, "Report Card": R, "Student Group": R},
 	"Class Teacher": {"Student Attendance": RWS, "Student Group": R, "Student": R, "Guardian": R, "Mark Entry": RWS, "Report Card": RW, "Course": R, "Program": R},
 }  # fmt: skip
+for _grants in RIGHTS.values():
+	_grants.setdefault("Company", R)  # the School filter on reports and forms
 
 TODAY = ["Timespan", "today"]
 MONTH = ["Timespan", "this month"]
@@ -47,7 +54,7 @@ CARDS = {
 	"Receipts Today": dict(document_type="Family Receipt", function="Count", color="#2e7d32",
 		filters=[flt_("Family Receipt", "posting_date", *TODAY), flt_("Family Receipt", "docstatus", "=", 1)]),
 	"Students Enrolled": dict(document_type="Student", function="Count", color="#1565c0", filters=[flt_("Student", "enabled", "=", 1)]),
-	"Present Today": dict(type="Custom", method="onebook_school.dashboard.present_today", color="#2e7d32"),
+	"Present Today": dict(type="Custom", method="onebook_school.dashboard.present_today", document_type="Student Attendance", color="#2e7d32"),
 	"Absent Today": dict(document_type="Student Attendance", function="Count", color="#c62828",
 		filters=[flt_("Student Attendance", "date", *TODAY), flt_("Student Attendance", "status", "=", "Absent"), flt_("Student Attendance", "docstatus", "=", 1)]),
 	"Open Enquiries": dict(document_type="Lead", function="Count", color="#6a1b9a", filters=[flt_("Lead", "status", "in", ["Open", "Replied", "Interested"])]),
@@ -192,6 +199,8 @@ def number_card(name, spec):
 	values = {"label": name, "type": spec.pop("type", "Document Type"), "is_public": 1, "is_standard": 0, "module": MODULE,
 			  "filters_json": json.dumps(filters), "show_percentage_stats": 0, **spec}  # fmt: skip
 	upsert("Number Card", name, values)
+	if values.get("function") != "Sum" and frappe.get_meta("Number Card").has_field("currency"):
+		frappe.db.set_value("Number Card", name, "currency", None)  # counts and percentages are not money
 
 
 def chart(name, spec):
@@ -201,6 +210,8 @@ def chart(name, spec):
 	if spec.get("color"):
 		values["color"] = spec["color"]
 	upsert("Dashboard Chart", name, values)
+	if "Count" in (spec.get("group_by_type"), spec.get("chart_type")):
+		frappe.db.set_value("Dashboard Chart", name, "currency", None)  # a count is not money
 
 
 def workspace(name, seq, icon, roles, intro, cards, charts, shortcuts, links):
@@ -210,7 +221,7 @@ def workspace(name, seq, icon, roles, intro, cards, charts, shortcuts, links):
 	blocks += [{"id": "sp1", "type": "spacer", "data": {"col": 12}}]
 	blocks += [{"id": f"ch{i}", "type": "chart", "data": {"chart_name": c, "col": 12 if (len(charts) % 2 and i == 0) else 6}} for i, c in enumerate(charts)]
 	blocks += [{"id": "hd2", "type": "header", "data": {"text": '<span class="h5"><b>Quick actions</b></span>', "col": 12}}]
-	blocks += [{"id": f"sc{i}", "type": "shortcut", "data": {"shortcut_name": s["label"], "col": 3}} for i, s in enumerate(shortcuts)]
+	blocks += [{"id": f"sc{i}", "type": "shortcut", "data": {"shortcut_name": s["label"], "col": 4}} for i, s in enumerate(shortcuts)]
 	blocks += [{"id": "hd3", "type": "header", "data": {"text": '<span class="h5"><b>Everything else</b></span>', "col": 12}}]
 	blocks += [{"id": f"cd{i}", "type": "card", "data": {"card_name": card, "col": 4}} for i, card in enumerate(links)]
 	link_rows = []
@@ -218,7 +229,7 @@ def workspace(name, seq, icon, roles, intro, cards, charts, shortcuts, links):
 		link_rows.append({"type": "Card Break", "label": card, "link_count": len(items)})
 		link_rows += [{"type": "Link", "label": target, "link_type": kind, "link_to": target, "is_query_report": 1 if kind == "Report" else 0} for kind, target in items]
 	values = {
-		"label": name, "title": name, "module": MODULE, "app": APP, "public": 1, "icon": icon, "sequence_id": 10 + seq, "is_hidden": 0,
+		"label": name, "title": name, "module": DESK_MODULE[name], "app": APP, "public": 1, "icon": icon, "sequence_id": 10 + seq, "is_hidden": 0,
 		"content": json.dumps(blocks), "roles": [{"role": r} for r in roles],
 		"number_cards": [{"number_card_name": c, "label": c} for c in cards], "charts": [{"chart_name": c, "label": c} for c in charts],
 		"shortcuts": shortcuts, "links": link_rows,
@@ -226,13 +237,20 @@ def workspace(name, seq, icon, roles, intro, cards, charts, shortcuts, links):
 	upsert("Workspace", name, values, child_tables=("roles", "number_cards", "charts", "shortcuts", "links"))
 
 
+# which role desk owns each school DocType or report, so opening it keeps that desk's sidebar
+OWNER = {
+	"Family Receipt": "Fees Office", "Fee Committee Order": "Fees Office", "Mark Entry": "Class Teacher", "Report Card": "Class Teacher",
+	"School Settings": "Correspondent", "UDISE Student Export": "Principal",
+}  # fmt: skip
+
+
 def sidebar(name, icon, links):
 	items = [{"type": "Link", "label": "Home", "link_type": "Workspace", "link_to": name, "icon": "house"}]
 	for card, rows in links.items():
 		items.append({"type": "Section Break", "label": card, "collapsible": 1, "indent": 1})
-		items += [{"type": "Link", "label": target, "link_type": kind, "link_to": target, "child": 1} for kind, target in rows]
+		items += [{"type": "Link", "label": target, "link_type": kind, "link_to": target, "child": 1, "is_default_module": 1 if OWNER.get(target) == name else 0} for kind, target in rows]
 	doctype = "Sidebar" if frappe.db.exists("DocType", "Sidebar") else "Workspace Sidebar"
-	upsert(doctype, name, {"title": name, "header_icon": icon, "app": APP, "module": MODULE, "standard": 1, "items": items}, child_tables=("items",))
+	upsert(doctype, name, {"title": name, "header_icon": icon, "app": APP, "module": DESK_MODULE[name], "standard": 1, "items": items}, child_tables=("items",))
 
 
 def desktop_icon(name, icon, roles, seq):
