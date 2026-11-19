@@ -1,0 +1,50 @@
+{
+ "doctype": "DocType",
+ "name": "Fee Committee Order Line",
+ "module": "OneBook School",
+ "engine": "InnoDB",
+ "custom": 0,
+ "istable": 1,
+ "issingle": 0,
+ "is_submittable": 0,
+ "editable_grid": 1,
+ "field_order": [
+  "program",
+  "fee_category",
+  "approved_amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "program",
+   "fieldtype": "Link",
+   "label": "Class",
+   "options": "Program",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "fee_category",
+   "fieldtype": "Link",
+   "label": "Fee Category",
+   "options": "Fee Category",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "approved_amount",
+   "fieldtype": "Currency",
+   "label": "Approved Amount (per year)",
+   "reqd": 1,
+   "in_list_view": 1
+  }
+ ],
+ "autoname": "",
+ "title_field": "",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "states": [],
+ "modified": "2026-11-19 12:00:00.000000",
+ "owner": "Administrator",
+ "permissions": []
+}

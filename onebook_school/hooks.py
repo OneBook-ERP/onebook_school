@@ -280,3 +280,7 @@ required_apps = ["campus"]
 
 after_install = "onebook_school.install.after_install"
 after_migrate = "onebook_school.install.after_migrate"
+
+doc_events = {
+	"Fee Structure": {"validate": "onebook_school.fees.fee_cap.check_fee_structure"},
+}

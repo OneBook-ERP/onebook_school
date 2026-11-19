@@ -1,0 +1,149 @@
+{
+ "doctype": "DocType",
+ "name": "Fee Committee Order",
+ "module": "OneBook School",
+ "engine": "InnoDB",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "is_submittable": 1,
+ "editable_grid": 1,
+ "field_order": [
+  "company",
+  "order_number",
+  "order_date",
+  "column_break_1",
+  "valid_from_year",
+  "valid_to_year",
+  "order_file",
+  "section_lines",
+  "lines",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "School",
+   "options": "Company",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "order_number",
+   "fieldtype": "Data",
+   "label": "Committee Order Number",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "order_date",
+   "fieldtype": "Date",
+   "label": "Order Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "valid_from_year",
+   "fieldtype": "Link",
+   "label": "Valid From (Academic Year)",
+   "options": "Academic Year",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "valid_to_year",
+   "fieldtype": "Link",
+   "label": "Valid To (Academic Year)",
+   "options": "Academic Year",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "order_file",
+   "fieldtype": "Attach",
+   "label": "Committee Order (PDF)"
+  },
+  {
+   "fieldname": "section_lines",
+   "fieldtype": "Section Break",
+   "label": "Approved Fees"
+  },
+  {
+   "fieldname": "lines",
+   "fieldtype": "Table",
+   "label": "Approved Fees",
+   "options": "Fee Committee Order Line",
+   "reqd": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "Fee Committee Order",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "autoname": "format:FCO-{order_number}",
+ "title_field": "order_number",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "states": [],
+ "modified": "2026-11-19 12:00:00.000000",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
+  },
+  {
+   "role": "Education Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
+  }
+ ]
+}
