@@ -1,0 +1,23 @@
+{
+ "doctype": "Print Format",
+ "name": "Exam Schedule",
+ "doc_type": "Exam Schedule",
+ "module": "OneBook School",
+ "standard": "Yes",
+ "custom_format": 1,
+ "print_format_type": "Jinja",
+ "print_format_builder": 0,
+ "disabled": 0,
+ "raw_printing": 0,
+ "align_labels_right": 0,
+ "show_section_headings": 0,
+ "line_breaks": 0,
+ "font_size": 0,
+ "margin_top": 10,
+ "margin_bottom": 10,
+ "margin_left": 10,
+ "margin_right": 10,
+ "html": "<div class=\"obs\">\n{% include \"onebook_school/templates/includes/school_header.html\" %}\n<div class=\"obs-title\">{{ doc.exam }} Examination Schedule</div>\n<div class=\"obs-sub\">Academic Year {{ doc.academic_year }}</div>\n{%- set classes = [] -%}{%- for p in doc.papers %}{% if p.program not in classes %}{% set _ = classes.append(p.program) %}{% endif %}{% endfor -%}\n{%- for cls in classes %}\n<table class=\"obs-table\">\n\t<thead><tr><th colspan=\"4\">{{ cls }}</th></tr><tr><th style=\"width:28%\">Date</th><th style=\"width:16%\">Day</th><th>Subject</th><th class=\"num\" style=\"width:22%\">Time</th></tr></thead>\n\t<tbody>\n\t{%- for p in doc.papers | selectattr(\"program\", \"equalto\", cls) | sort(attribute=\"exam_date\") %}\n\t\t<tr><td>{{ frappe.format(p.exam_date, {\"fieldtype\": \"Date\"}) }}</td><td>{{ frappe.utils.getdate(p.exam_date).strftime(\"%A\") }}</td><td><b>{{ p.course }}</b></td>\n\t\t<td class=\"num\">{{ (p.start_time or \"\")[:5] }}{% if p.end_time %} \u2013 {{ (p.end_time or \"\")[:5] }}{% endif %}</td></tr>\n\t{%- endfor %}\n\t</tbody>\n</table>\n{%- endfor %}\n<p class=\"obs-note\">Students must be in the hall 15 minutes before the start. Bring the hall ticket and your own stationery.</p>\n<table class=\"obs-signs\"><tr><td></td><td></td><td class=\"line\">Principal</td></tr></table>\n</div>\n",
+ "modified": "2026-11-19 12:00:00.000000",
+ "owner": "Administrator"
+}
