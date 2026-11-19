@@ -10,7 +10,7 @@
    "hidden": 0,
    "icon": "chart-pie",
    "link_to": "Correspondent",
-   "link_type": "Workspace",
+   "link_type": "Sidebar",
    "title": "Correspondent"
   },
   {
@@ -18,7 +18,7 @@
    "hidden": 0,
    "icon": "school",
    "link_to": "Principal",
-   "link_type": "Workspace",
+   "link_type": "Sidebar",
    "title": "Principal"
   },
   {
@@ -26,7 +26,7 @@
    "hidden": 0,
    "icon": "wallet",
    "link_to": "Fees Office",
-   "link_type": "Workspace",
+   "link_type": "Sidebar",
    "title": "Fees Office"
   },
   {
@@ -34,7 +34,7 @@
    "hidden": 0,
    "icon": "building-2",
    "link_to": "School Office",
-   "link_type": "Workspace",
+   "link_type": "Sidebar",
    "title": "School Office"
   },
   {
@@ -42,11 +42,11 @@
    "hidden": 0,
    "icon": "users-round",
    "link_to": "Class Teacher",
-   "link_type": "Workspace",
+   "link_type": "Sidebar",
    "title": "Class Teacher"
   }
  ],
- "modified": "2026-11-19 13:56:08.675989",
+ "modified": "2026-11-19 18:19:11.086894",
  "modified_by": "Administrator",
  "name": "onebook_school",
  "owner": "Administrator",

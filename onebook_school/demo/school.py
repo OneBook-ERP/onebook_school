@@ -24,7 +24,7 @@ SETTINGS = {
 # login -> (full name, roles, workspace shown first)
 USERS = {
 	"correspondent": ("R. Palanisamy", ["School Correspondent", "Education Manager", "Accounts Manager", "Academics User"], "Correspondent"),
-	"principal": ("Dr. S. Meenakshi", ["School Principal", "Education Manager", "Academics User", "Instructor"], "Principal"),
+	"principal": ("Dr. S. Meenakshi", ["School Principal", "Principal", "Education Manager", "Academics User", "Instructor"], "Principal"),
 	"accounts": ("K. Saravanan", ["School Accountant", "Accounts Manager", "Accounts User"], "Fees Office"),
 	"office": ("M. Revathi", ["School Office", "Academics User"], "School Office"),
 	"teacher.vi": ("P. Anitha", ["Class Teacher", "Instructor"], "Class Teacher"),
@@ -151,6 +151,9 @@ def ensure_user(ctx, mail, full_name, roles, user_type="System User"):
 	missing = [r for r in roles if r not in have]
 	if missing:
 		user.add_roles(*missing)
+	extra = [r for r in have if r not in roles]
+	if extra:  # a demo login holds exactly its own roles, so each one sees only its own desk
+		user.remove_roles(*extra)
 	update_password(mail, PASSWORD)
 	if not frappe.db.exists("User Permission", {"user": mail, "allow": "Company", "for_value": ctx.company}):
 		frappe.get_doc({"doctype": "User Permission", "user": mail, "allow": "Company", "for_value": ctx.company, "apply_to_all_doctypes": 1}).insert(ignore_permissions=True)

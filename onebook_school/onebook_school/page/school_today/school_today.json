@@ -1,0 +1,40 @@
+{
+ "content": null,
+ "creation": "2026-11-19 18:08:58.373081",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-11-19 18:08:58.373081",
+ "modified_by": "Administrator",
+ "module": "OneBook School",
+ "name": "school-today",
+ "owner": "Administrator",
+ "page_name": "school-today",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "School Correspondent"
+  },
+  {
+   "role": "School Principal"
+  },
+  {
+   "role": "School Accountant"
+  },
+  {
+   "role": "School Office"
+  },
+  {
+   "role": "Class Teacher"
+  }
+ ],
+ "script": null,
+ "shared_page": 1,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Today",
+ "type": "Frappe UI"
+}

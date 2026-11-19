@@ -236,17 +236,9 @@ def chart(name, spec):
 
 
 def workspace(name, seq, icon, roles, intro, cards, charts, shortcuts, links):
-	blocks = [{"id": "td", "type": "custom_block", "data": {"custom_block_name": "Today", "col": 12}},
-			  {"id": "hd", "type": "header", "data": {"text": f'<span class="h5"><b>{name} dashboard</b></span>', "col": 12}},
-			  {"id": "pg", "type": "paragraph", "data": {"text": f'<span class="text-muted">{intro}</span>', "col": 12}}]  # fmt: skip
-	for i, c in enumerate(cards):
-		if c.startswith("# "):
-			blocks.append({"id": f"ch{i}h", "type": "header", "data": {"text": f'<span class="h6"><b>{c[2:]}</b></span>', "col": 12}})
-		else:
-			blocks.append({"id": f"nc{i}", "type": "number_card", "data": {"number_card_name": c, "col": 4}})
-	cards = [c for c in cards if not c.startswith("# ")]
-	blocks += [{"id": "sp1", "type": "spacer", "data": {"col": 12}}]
-	blocks += [{"id": f"ch{i}", "type": "chart", "data": {"chart_name": c, "col": 12 if (len(charts) % 2 and i == 0) else 6}} for i, c in enumerate(charts)]
+	# the numbers, charts and the day live on the board (`/desk/<slug>/school-today/<slug>`); the workspace keeps the
+	# quick actions and every link, one click from the board's sidebar
+	blocks = [{"id": "pg", "type": "paragraph", "data": {"text": f'<span class="text-muted">{intro}</span>', "col": 12}}]
 	blocks += [{"id": "hd2", "type": "header", "data": {"text": '<span class="h5"><b>Quick actions</b></span>', "col": 12}}]
 	blocks += [{"id": f"sc{i}", "type": "shortcut", "data": {"shortcut_name": s["label"], "col": 4}} for i, s in enumerate(shortcuts)]
 	blocks += [{"id": "hd3", "type": "header", "data": {"text": '<span class="h5"><b>Everything else</b></span>', "col": 12}}]
@@ -257,8 +249,7 @@ def workspace(name, seq, icon, roles, intro, cards, charts, shortcuts, links):
 		link_rows += [{"type": "Link", "label": target, "link_type": kind, "link_to": target, "is_query_report": 1 if kind == "Report" else 0} for kind, target in items]
 	values = {
 		"label": name, "title": name, "module": DESK_MODULE[name], "app": APP, "public": 1, "icon": icon, "sequence_id": 10 + seq, "is_hidden": 0,
-		"content": json.dumps(blocks), "roles": [{"role": r} for r in roles], "custom_blocks": [{"custom_block_name": "Today", "label": "Today"}],
-		"number_cards": [{"number_card_name": c, "label": c} for c in cards], "charts": [{"chart_name": c, "label": c} for c in charts],
+		"content": json.dumps(blocks), "roles": [{"role": r} for r in roles], "custom_blocks": [], "number_cards": [], "charts": [],
 		"shortcuts": shortcuts, "links": link_rows,
 	}  # fmt: skip
 	upsert("Workspace", name, values, child_tables=("roles", "number_cards", "charts", "shortcuts", "links", "custom_blocks"))
@@ -272,8 +263,14 @@ OWNER = {
 }  # fmt: skip
 
 
+def board_url(name):
+	slug = name.lower().replace(" ", "-")
+	return f"/desk/{slug}/school-today/{slug}"
+
+
 def sidebar(name, icon, links):
-	items = [{"type": "Link", "label": "Home", "link_type": "Workspace", "link_to": name, "icon": "house"}]
+	items = [{"type": "Link", "label": "Dashboard", "link_type": "URL", "url": board_url(name), "icon": "layout-dashboard"},
+			 {"type": "Link", "label": "Quick actions", "link_type": "Workspace", "link_to": name, "icon": "zap"}]  # fmt: skip
 	for card, rows in links.items():
 		items.append({"type": "Section Break", "label": card, "collapsible": 1, "indent": 1})
 		items += [{"type": "Link", "label": target, "link_type": kind, "link_to": target, "child": 1, "is_default_module": 1 if OWNER.get(target) == name else 0} for kind, target in rows]
@@ -283,14 +280,14 @@ def sidebar(name, icon, links):
 
 def desktop_icon(name, icon, roles, seq):
 	upsert("Desktop Icon", "OneBook School", {"label": "OneBook School", "icon_type": "App", "app": APP, "link_type": "External",
-		"link": "/desk/correspondent", "logo_url": "/assets/onebook_school/images/onebook-school.svg", "standard": 1, "hidden": 0})  # fmt: skip
+		"link": "/desk/school-today", "logo_url": "/assets/onebook_school/images/onebook-school.svg", "standard": 1, "hidden": 0})  # fmt: skip
 	upsert("Desktop Icon", name, {"label": name, "icon_type": "Link", "icon": icon, "app": APP, "link_type": "Workspace Sidebar",
 		"link_to": name, "parent_icon": "OneBook School", "standard": 1, "hidden": 0, "idx": seq + 1,
 		"roles": [{"role": r} for r in roles]}, child_tables=("roles",))  # fmt: skip
 
 
 def dock():
-	items = [{"link_type": "Workspace", "link_to": name, "title": name, "icon": spec[0]} for name, spec in WORKSPACES.items()]
+	items = [{"link_type": "Sidebar", "link_to": name, "title": name, "icon": spec[0]} for name, spec in WORKSPACES.items()]
 	name = frappe.db.get_value("Dock", {"app": APP, "user": ["is", "not set"]})
 	values = {"app": APP, "standard": 1, "items": items}
 	if name:
