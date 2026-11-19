@@ -96,3 +96,42 @@ def school_settings(**values):
 	settings.update(values)
 	settings.save(ignore_permissions=True)
 	return settings
+
+
+def fee_item():
+	if not frappe.db.exists("Item", "OBS Tuition Fee"):
+		frappe.get_doc(
+			{"doctype": "Item", "item_code": "OBS Tuition Fee", "item_group": frappe.db.get_value("Item Group", {"is_group": 0}), "is_stock_item": 0, "stock_uom": "Nos", "gst_hsn_code": "999231"}
+		).insert(ignore_permissions=True)
+	return "OBS Tuition Fee"
+
+
+def fee_invoice(student, amount, due_date, posting_date=None):
+	"""A submitted fee Sales Invoice of `amount` for `student`."""
+	from frappe.utils import nowdate
+
+	invoice = frappe.get_doc(
+		{
+			"doctype": "Sales Invoice", "company": company(), "student": student,
+			"customer": frappe.db.get_value("Student", student, "customer"),
+			"posting_date": posting_date or nowdate(), "set_posting_time": 1, "due_date": due_date,
+			"debit_to": receivable(), "additional_discount_percentage": 0,
+			"items": [{"item_code": fee_item(), "qty": 1, "rate": amount}],
+		}
+	)  # fmt: skip
+	invoice.flags.ignore_permissions = True
+	invoice.insert()
+	invoice.submit()
+	return invoice
+
+
+def cash_mode():
+	"""Mode of Payment "Cash" with the test school's cash account."""
+	account = frappe.db.get_value("Account", {"company": company(), "account_type": "Cash", "is_group": 0})
+	if not frappe.db.exists("Mode of Payment", "Cash"):
+		frappe.get_doc({"doctype": "Mode of Payment", "mode_of_payment": "Cash", "type": "Cash"}).insert(ignore_permissions=True)
+	mode = frappe.get_doc("Mode of Payment", "Cash")
+	if not any(a.company == company() for a in mode.accounts):
+		mode.append("accounts", {"company": company(), "default_account": account})
+		mode.save(ignore_permissions=True)
+	return "Cash"
