@@ -109,7 +109,7 @@ OVERDUE = '{"student": ["is", "set"], "status": "Overdue"}'
 WORKSPACES = {
 	"Correspondent": (
 		"chart-pie", ["School Correspondent", "System Manager"],
-		"The school at a glance: money in, money due, children in class.",
+		"Money in, money due, children in class.",
 		["# Money", "Fees Collected Today", "Fees Collected This Month", "Outstanding Fees", "# School", "Students Enrolled", "Present Today", "Open Enquiries",
 		 "# Teaching and learning", "Teachers", "Students per Teacher", "Pass Percentage"],
 		["Fee Collection by Month", "Dues by Class", "Payment Mode", "Students by Class", "Grade Distribution", "Average % by Section"],
@@ -122,7 +122,7 @@ WORKSPACES = {
 	),
 	"Principal": (
 		"school", ["School Principal", "School Correspondent", "System Manager"],
-		"Today's attendance, the teaching staff, how the children are learning, and the returns that are due.",
+		"Attendance, staff, learning and returns.",
 		["# Today", "Present Today", "Absent Today", "Students Enrolled", "# Teaching staff", "Teachers", "Students per Teacher", "Staff Away Today",
 		 "# Learning (latest exam)", "Pass Percentage", "Top Learners (90%+)", "Need Support (below 50%)", "# Office", "Open Enquiries", "Certificates This Month", "Report Cards Ready"],
 		["Attendance Today", "Staff Attendance Today", "Grade Distribution", "Average % by Section", "Students by Class", "Dues by Class"],
@@ -137,7 +137,7 @@ WORKSPACES = {
 	),
 	"Fees Office": (
 		"wallet", ["School Accountant", "School Correspondent", "System Manager"],
-		"Collect, receipt and follow up: every child's fee, one parent payment.",
+		"Collect, receipt, follow up.",
 		["Fees Collected Today", "Receipts Today", "Outstanding Fees", "Overdue Fee Invoices"],
 		["Fee Collection - Last 30 Days", "Dues by Class", "Payment Mode"],
 		[dt("New Fee Receipt", "Family Receipt", view="New", color="Green"), dt("Fee Receipts", "Family Receipt"),
@@ -149,7 +149,7 @@ WORKSPACES = {
 	),
 	"School Office": (
 		"building-2", ["School Office", "School Principal", "System Manager"],
-		"Admissions, records and certificates for parents at the counter.",
+		"Admissions, records, certificates.",
 		["Students Enrolled", "Open Enquiries", "Certificates This Month", "Absent Today"],
 		["Students by Class"],
 		[dt("Enquiries", "Lead"), dt("Students", "Student"), dt("Parents", "Guardian"), dt("Enrolments", "Program Enrollment"),
@@ -160,7 +160,7 @@ WORKSPACES = {
 	),
 	"Class Teacher": (
 		"users-round", ["Class Teacher", "School Principal", "System Manager"],
-		"Your section: attendance in the morning, marks after each test.",
+		"Attendance each morning, marks after each test.",
 		["Present Today", "Absent Today", "Report Cards Ready", "Top Learners (90%+)", "Need Support (below 50%)", "Pass Percentage"],
 		["Attendance Today", "Average % by Section"],
 		[dt("Take Attendance", "Student Attendance Tool", view="New", color="Green"), dt("Enter Marks", "Mark Entry", view="New", color="Blue"),

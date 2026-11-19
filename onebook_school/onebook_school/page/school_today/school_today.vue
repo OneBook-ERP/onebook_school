@@ -132,10 +132,10 @@ onMounted(() => {
 	<div class="flex h-full flex-col gap-6 overflow-y-auto p-5">
 		<!-- who, when, which board -->
 		<header class="flex flex-wrap items-end justify-between gap-4">
-			<div class="min-w-0">
+			<div class="min-w-0 flex-1">
 				<p class="text-p-sm font-medium uppercase tracking-wide text-ink-gray-5">{{ dateLabel }}</p>
 				<h2 class="text-2xl font-semibold text-ink-gray-9">{{ data?.greeting || __("Today") }}</h2>
-				<p v-if="data?.intro" class="mt-1 text-p-base text-ink-gray-6">{{ data.intro }}</p>
+				<p v-if="data?.intro" class="mt-1 truncate text-p-base text-ink-gray-6" :title="data.intro">{{ data.intro }}</p>
 			</div>
 			<div class="flex flex-wrap items-center gap-2">
 				<TabButtons v-if="tabs.length > 1" v-model="activeTab" :options="tabs" />
