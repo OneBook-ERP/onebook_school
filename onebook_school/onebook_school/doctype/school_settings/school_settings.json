@@ -1,0 +1,129 @@
+{
+ "doctype": "DocType",
+ "name": "School Settings",
+ "module": "OneBook School",
+ "engine": "InnoDB",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 1,
+ "is_submittable": 0,
+ "editable_grid": 1,
+ "field_order": [
+  "company",
+  "school_name",
+  "school_name_tamil",
+  "address",
+  "logo",
+  "column_break_1",
+  "board",
+  "udise_code",
+  "emis_school_id",
+  "section_fees",
+  "sibling_discount_percent"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "School",
+   "options": "Company"
+  },
+  {
+   "fieldname": "school_name",
+   "fieldtype": "Data",
+   "label": "School Name"
+  },
+  {
+   "fieldname": "school_name_tamil",
+   "fieldtype": "Data",
+   "label": "School Name (Tamil)"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address"
+  },
+  {
+   "fieldname": "logo",
+   "fieldtype": "Attach Image",
+   "label": "Logo"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break",
+   "label": ""
+  },
+  {
+   "fieldname": "board",
+   "fieldtype": "Data",
+   "label": "Board",
+   "default": "Tamil Nadu State Board (Matriculation)"
+  },
+  {
+   "fieldname": "udise_code",
+   "fieldtype": "Data",
+   "label": "UDISE Code"
+  },
+  {
+   "fieldname": "emis_school_id",
+   "fieldtype": "Data",
+   "label": "EMIS School ID"
+  },
+  {
+   "fieldname": "section_fees",
+   "fieldtype": "Section Break",
+   "label": "Fees"
+  },
+  {
+   "fieldname": "sibling_discount_percent",
+   "fieldtype": "Percent",
+   "label": "Sibling Concession (% on each younger child)"
+  }
+ ],
+ "autoname": "",
+ "title_field": "",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "states": [],
+ "modified": "2026-11-19 12:00:00.000000",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "email": 1,
+   "report": 0,
+   "export": 0,
+   "share": 1
+  },
+  {
+   "role": "Education Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "print": 1,
+   "email": 1,
+   "report": 0,
+   "export": 0,
+   "share": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "print": 1,
+   "email": 1,
+   "report": 0,
+   "export": 0,
+   "share": 1
+  }
+ ]
+}
