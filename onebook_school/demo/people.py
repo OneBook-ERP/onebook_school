@@ -4,7 +4,6 @@ incomplete on purpose so the UDISE+ check has something to find; RTE children si
 import random
 
 import frappe
-from frappe.utils import add_days
 
 from campus.setup.demo_data.names import FEMALE, MALE, SURNAMES
 from onebook_school.demo.classes import CLASSES, group_name, sections_of
@@ -132,8 +131,6 @@ def share_parents(student, elder):
 	doc.last_name = elder_doc.last_name
 	for g in elder_doc.guardians:
 		doc.append("guardians", {"guardian": g.guardian, "guardian_name": g.guardian_name, "relation": g.relation})
-	if not doc.date_of_birth or (elder_doc.date_of_birth and doc.date_of_birth <= elder_doc.date_of_birth):
-		doc.date_of_birth = add_days(elder_doc.date_of_birth, 700) if elder_doc.date_of_birth else doc.date_of_birth
 	doc.flags.ignore_permissions = True
 	doc.save()
 
@@ -149,3 +146,15 @@ def parent_login(ctx):
 	guardian = shared[0][0]
 	mail = ensure_user(ctx, f"parent@{DOMAIN}", frappe.db.get_value("Guardian", guardian, "guardian_name"), ["Guardian"], user_type="Website User")
 	frappe.db.set_value("Guardian", guardian, {"user": mail, "email_address": mail})
+
+
+def repair_birth_dates(ctx=None):
+	"""Put every student's birth year back in their class's band (an earlier loader shifted younger siblings)."""
+	fixed = 0
+	for row in frappe.get_all("Program Enrollment", filters={"docstatus": 1, "academic_year": YEAR}, fields=["student", "program"]):
+		dob = frappe.db.get_value("Student", row.student, "date_of_birth")
+		year = birth_year(row.program)
+		if dob and abs(dob.year - year) > 1:
+			frappe.db.set_value("Student", row.student, "date_of_birth", f"{year}-{dob.month:02d}-{min(dob.day, 28):02d}", update_modified=False)
+			fixed += 1
+	return fixed
