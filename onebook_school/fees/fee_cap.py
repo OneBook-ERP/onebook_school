@@ -45,7 +45,7 @@ def check_fee_structure(doc, method=None):
 	approved = approved_amounts(doc.company, doc.program, doc.academic_year)
 	if not approved:
 		return
-	charged = {}
+	charged = charged_elsewhere(doc)
 	for row in doc.get("components") or []:
 		charged[row.fees_category] = charged.get(row.fees_category, 0) + flt(row.amount)
 	over = [
@@ -62,3 +62,18 @@ def check_fee_structure(doc, method=None):
 			+ "<br>".join(over),
 			title=_("Above Committee-Approved Fee"),
 		)
+
+
+def charged_elsewhere(doc):
+	"""Per category, what the class's other live Fee Structures of the year already charge (term structures add up)."""
+	others = frappe.get_all(
+		"Fee Structure",
+		filters={"company": doc.company, "program": doc.program, "academic_year": doc.academic_year,
+				 "docstatus": ["<", 2], "name": ["!=", doc.name or ""]},
+		pluck="name",
+	)  # fmt: skip
+	charged = {}
+	if others:
+		for row in frappe.get_all("Fee Component", filters={"parent": ["in", others], "parenttype": "Fee Structure"}, fields=["fees_category", "amount"]):
+			charged[row.fees_category] = charged.get(row.fees_category, 0) + flt(row.amount)
+	return charged

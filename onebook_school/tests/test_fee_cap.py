@@ -53,3 +53,12 @@ class TestFeeCap(FrappeTestCase):
 		order.cancel()
 		self.assertNotIn("Tuition", approved_amounts(fx.company(), "OBS Std VIII", fx.YEAR))
 		self.assertEqual(approved_amounts(fx.company(), PROGRAM, "Unknown Year"), {})
+
+	def test_term_structures_sum_against_year_cap(self):
+		committee_order({"Tuition": 30000}, program="OBS Std XI")
+		first = fx.fee_structure("OBS Std XI", {"Tuition": 15000})
+		first.academic_term = None
+		first.insert()
+		second = fx.fee_structure("OBS Std XI", {"Tuition": 16000})
+		with self.assertRaises(frappe.ValidationError):
+			second.insert()
