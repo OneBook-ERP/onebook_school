@@ -8,7 +8,7 @@ app_license = "gpl-3.0"
 # Apps
 # ------------------
 
-# required_apps = []
+required_apps = ["campus"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -277,3 +277,6 @@ app_license = "gpl-3.0"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+
+after_install = "onebook_school.install.after_install"
+after_migrate = "onebook_school.install.after_migrate"
