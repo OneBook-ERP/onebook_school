@@ -21,9 +21,9 @@ ROLES = ["School Correspondent", "School Principal", "School Accountant", "Schoo
 R, RW, RWS = ("read", "report", "print"), ("read", "report", "print", "write", "create"), ("read", "report", "print", "write", "create", "submit")
 # role -> {doctype: rights}; what each school role needs beyond the standard Education/ERPNext roles it also holds
 RIGHTS = {
-	"School Correspondent": {"Lead": R, "Sales Invoice": R, "Payment Entry": R, "Student Attendance": R, "Report Card": R, "Mark Entry": R,
+	"School Correspondent": {"Instructor": R, "Attendance": R, "Lead": R, "Sales Invoice": R, "Payment Entry": R, "Student Attendance": R, "Report Card": R, "Mark Entry": R,
 		"Family Receipt": R, "Certificate Request": R, "Fee Committee Order": RWS, "School Settings": RW},
-	"School Principal": {"Lead": R, "Sales Invoice": R, "Payment Entry": R, "Student Attendance": RWS, "Report Card": RW, "Mark Entry": RWS,
+	"School Principal": {"Instructor": R, "Attendance": R, "Employee": R, "Lead": R, "Sales Invoice": R, "Payment Entry": R, "Student Attendance": RWS, "Report Card": RW, "Mark Entry": RWS,
 		"Certificate Request": RWS, "Family Receipt": R, "Fee Committee Order": R, "Student": RW, "Guardian": RW},
 	"School Accountant": {"Family Receipt": RWS, "Sales Invoice": RWS, "Payment Entry": RWS, "Fee Structure": RWS, "Fee Committee Order": R,
 		"Student": R, "Guardian": R, "Program Enrollment": R},
@@ -59,6 +59,13 @@ CARDS = {
 		filters=[flt_("Student Attendance", "date", *TODAY), flt_("Student Attendance", "status", "=", "Absent"), flt_("Student Attendance", "docstatus", "=", 1)]),
 	"Open Enquiries": dict(document_type="Lead", function="Count", color="#6a1b9a", filters=[flt_("Lead", "status", "in", ["Open", "Replied", "Interested"])]),
 	"Report Cards Ready": dict(document_type="Report Card", function="Count", color="#1565c0", filters=[]),
+	"Teachers": dict(document_type="Instructor", function="Count", color="#1565c0", filters=[flt_("Instructor", "status", "=", "Active")]),
+	"Students per Teacher": dict(type="Custom", method="onebook_school.dashboard.students_per_teacher", document_type="Student", color="#1565c0"),
+	"Staff Away Today": dict(document_type="Attendance", function="Count", color="#c62828",
+		filters=[flt_("Attendance", "attendance_date", *TODAY), flt_("Attendance", "status", "in", ["Absent", "On Leave"]), flt_("Attendance", "docstatus", "=", 1)]),
+	"Pass Percentage": dict(type="Custom", method="onebook_school.dashboard.pass_percentage", document_type="Report Card", color="#2e7d32"),
+	"Top Learners (90%+)": dict(document_type="Report Card", function="Count", color="#2e7d32", filters=[flt_("Report Card", "percentage", ">=", 90)]),
+	"Need Support (below 50%)": dict(document_type="Report Card", function="Count", color="#ef6c00", filters=[flt_("Report Card", "percentage", "<", 50)]),
 	"Certificates This Month": dict(document_type="Certificate Request", function="Count", color="#6a1b9a",
 		filters=[flt_("Certificate Request", "creation", *MONTH), flt_("Certificate Request", "docstatus", "=", 1)]),
 }  # fmt: skip
@@ -77,6 +84,12 @@ CHARTS = {
 		aggregate_function_based_on="paid_amount", type="Donut", filters=[flt_("Payment Entry", "docstatus", "=", 1), flt_("Payment Entry", "payment_type", "=", "Receive")]),
 	"Students by Class": dict(chart_type="Group By", document_type="Program Enrollment", group_by_based_on="program", group_by_type="Count",
 		type="Bar", color="#1565c0", number_of_groups=0, filters=[flt_("Program Enrollment", "docstatus", "=", 1)]),
+	"Grade Distribution": dict(chart_type="Group By", document_type="Report Card", group_by_based_on="overall_grade", group_by_type="Count",
+		type="Bar", color="#a3197b", number_of_groups=0, filters=[]),
+	"Average % by Section": dict(chart_type="Group By", document_type="Report Card", group_by_based_on="student_group", group_by_type="Average",
+		aggregate_function_based_on="percentage", type="Bar", color="#1565c0", number_of_groups=0, filters=[]),
+	"Staff Attendance Today": dict(chart_type="Group By", document_type="Attendance", group_by_based_on="status", group_by_type="Count",
+		type="Donut", filters=[flt_("Attendance", "attendance_date", *TODAY), flt_("Attendance", "docstatus", "=", 1)]),
 	"Attendance Today": dict(chart_type="Group By", document_type="Student Attendance", group_by_based_on="status", group_by_type="Count",
 		type="Donut", filters=[flt_("Student Attendance", "date", *TODAY), flt_("Student Attendance", "docstatus", "=", 1)]),
 }  # fmt: skip
@@ -97,8 +110,9 @@ WORKSPACES = {
 	"Correspondent": (
 		"chart-pie", ["School Correspondent", "System Manager"],
 		"The school at a glance: money in, money due, children in class.",
-		["Fees Collected Today", "Fees Collected This Month", "Outstanding Fees", "Present Today", "Students Enrolled", "Open Enquiries"],
-		["Fee Collection by Month", "Dues by Class", "Payment Mode", "Students by Class"],
+		["# Money", "Fees Collected Today", "Fees Collected This Month", "Outstanding Fees", "# School", "Students Enrolled", "Present Today", "Open Enquiries",
+		 "# Teaching and learning", "Teachers", "Students per Teacher", "Pass Percentage"],
+		["Fee Collection by Month", "Dues by Class", "Payment Mode", "Students by Class", "Grade Distribution", "Average % by Section"],
 		[dt("Defaulters", "Sales Invoice", stats_filter=OVERDUE, format="{} Overdue", color="Red"), dt("Fee Receipts", "Family Receipt"),
 		 dt("Fee Committee Order", "Fee Committee Order"), rpt("UDISE Student Export", "UDISE Student Export"), dt("Report Cards", "Report Card"),
 		 dt("Certificates", "Certificate Request")],
@@ -108,9 +122,10 @@ WORKSPACES = {
 	),
 	"Principal": (
 		"school", ["School Principal", "School Correspondent", "System Manager"],
-		"Today's attendance, this term's results and the returns that are due.",
-		["Present Today", "Absent Today", "Students Enrolled", "Report Cards Ready", "Open Enquiries", "Certificates This Month"],
-		["Attendance Today", "Students by Class", "Dues by Class"],
+		"Today's attendance, the teaching staff, how the children are learning, and the returns that are due.",
+		["# Today", "Present Today", "Absent Today", "Students Enrolled", "# Teaching staff", "Teachers", "Students per Teacher", "Staff Away Today",
+		 "# Learning (latest exam)", "Pass Percentage", "Top Learners (90%+)", "Need Support (below 50%)", "# Office", "Open Enquiries", "Certificates This Month", "Report Cards Ready"],
+		["Attendance Today", "Staff Attendance Today", "Grade Distribution", "Average % by Section", "Students by Class", "Dues by Class"],
 		[dt("Mark Entry", "Mark Entry"), dt("Report Cards", "Report Card"), rpt("UDISE Student Export", "UDISE Student Export"),
 		 dt("Class Sections", "Student Group"), dt("Attendance", "Student Attendance"), dt("Enquiries", "Lead"), dt("Certificates", "Certificate Request"),
 		 dt("Students", "Student")],
@@ -144,8 +159,8 @@ WORKSPACES = {
 	"Class Teacher": (
 		"users-round", ["Class Teacher", "School Principal", "System Manager"],
 		"Your section: attendance in the morning, marks after each test.",
-		["Present Today", "Absent Today", "Report Cards Ready"],
-		["Attendance Today"],
+		["Present Today", "Absent Today", "Report Cards Ready", "Top Learners (90%+)", "Need Support (below 50%)", "Pass Percentage"],
+		["Attendance Today", "Average % by Section"],
 		[dt("Take Attendance", "Student Attendance Tool", view="New", color="Green"), dt("Enter Marks", "Mark Entry", view="New", color="Blue"),
 		 dt("Report Cards", "Report Card"), dt("My Sections", "Student Group"), dt("Students", "Student")],
 		{"Class": [("DocType", "Student Group"), ("DocType", "Student"), ("DocType", "Student Attendance")],
@@ -217,7 +232,12 @@ def chart(name, spec):
 def workspace(name, seq, icon, roles, intro, cards, charts, shortcuts, links):
 	blocks = [{"id": "hd", "type": "header", "data": {"text": f'<span class="h4"><b>{name}</b></span>', "col": 12}},
 			  {"id": "pg", "type": "paragraph", "data": {"text": f'<span class="text-muted">{intro}</span>', "col": 12}}]  # fmt: skip
-	blocks += [{"id": f"nc{i}", "type": "number_card", "data": {"number_card_name": c, "col": 4 if len(cards) % 3 == 0 else 3}} for i, c in enumerate(cards)]
+	for i, c in enumerate(cards):
+		if c.startswith("# "):
+			blocks.append({"id": f"ch{i}h", "type": "header", "data": {"text": f'<span class="h6"><b>{c[2:]}</b></span>', "col": 12}})
+		else:
+			blocks.append({"id": f"nc{i}", "type": "number_card", "data": {"number_card_name": c, "col": 4}})
+	cards = [c for c in cards if not c.startswith("# ")]
 	blocks += [{"id": "sp1", "type": "spacer", "data": {"col": 12}}]
 	blocks += [{"id": f"ch{i}", "type": "chart", "data": {"chart_name": c, "col": 12 if (len(charts) % 2 and i == 0) else 6}} for i, c in enumerate(charts)]
 	blocks += [{"id": "hd2", "type": "header", "data": {"text": '<span class="h5"><b>Quick actions</b></span>', "col": 12}}]

@@ -12,9 +12,9 @@ import time
 import frappe
 from frappe import _
 
-from onebook_school.demo import academics, classes, extras, fees, people, school
+from onebook_school.demo import academics, classes, extras, fees, people, school, staff
 
-STEPS = ("school", "classes", "people", "fees", "academics", "extras")
+STEPS = ("school", "classes", "staff", "people", "fees", "academics", "extras")
 
 
 def check_allowed():
@@ -37,7 +37,7 @@ def load(seed=2026, scale="full", company=None, logo_path=None, steps=None):
 	check_allowed()
 	started = time.monotonic()
 	ctx = Context(int(seed), scale, company, logo_path)
-	modules = {"school": school, "classes": classes, "people": people, "fees": fees, "academics": academics, "extras": extras}
+	modules = {"school": school, "classes": classes, "staff": staff, "people": people, "fees": fees, "academics": academics, "extras": extras}
 	for step in steps or STEPS:
 		modules[step].load(ctx)
 		frappe.db.commit()  # nosemgrep: each step is a checkpoint for a long demo load
