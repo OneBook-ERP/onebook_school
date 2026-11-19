@@ -181,3 +181,30 @@ def upi_mode():
 	if not frappe.db.exists("Mode of Payment", "OBS UPI"):
 		frappe.get_doc({"doctype": "Mode of Payment", "mode_of_payment": "OBS UPI", "type": "Bank", "accounts": [{"company": company(), "default_account": name}]}).insert(ignore_permissions=True)
 	return {"mode": "OBS UPI", "account": name}
+
+
+def instructor(name):
+	existing = frappe.db.get_value("Instructor", {"instructor_name": name})
+	return existing or frappe.get_doc({"doctype": "Instructor", "instructor_name": name, "status": "Active", "oc_company": company()}).insert(ignore_permissions=True).name
+
+
+def periods(count=4):
+	"""School Settings periods: `count` teaching periods of 40 minutes from 09:00 with one break after the second."""
+	rows, minute, no = [], 9 * 60, 1
+	for i in range(count):
+		rows.append({"period_no": no, "label": f"P{no}", "start_time": f"{minute // 60:02d}:{minute % 60:02d}:00", "end_time": f"{(minute + 40) // 60:02d}:{(minute + 40) % 60:02d}:00", "is_break": 0})
+		minute += 40
+		no += 1
+		if i == 1:
+			rows.append({"period_no": no, "label": "Break", "start_time": f"{minute // 60:02d}:{minute % 60:02d}:00", "end_time": f"{(minute + 15) // 60:02d}:{(minute + 15) % 60:02d}:00", "is_break": 1})
+			minute += 15
+			no += 1
+	settings = frappe.get_single("School Settings")
+	settings.set("periods", rows)
+	settings.save(ignore_permissions=True)
+
+
+def assignment(group, course_name, teacher, per_week):
+	return frappe.get_doc(
+		{"doctype": "Teaching Assignment", "student_group": group, "course": course(course_name), "instructor": teacher, "periods_per_week": per_week}
+	).insert(ignore_permissions=True)

@@ -1,0 +1,118 @@
+{
+ "doctype": "DocType",
+ "name": "Cover Assignment",
+ "module": "OneBook School",
+ "engine": "InnoDB",
+ "custom": 0,
+ "istable": 0,
+ "issingle": 0,
+ "is_submittable": 0,
+ "editable_grid": 1,
+ "field_order": [
+  "date",
+  "period_no",
+  "student_group",
+  "course",
+  "absent_instructor",
+  "cover_instructor",
+  "cover_instructor_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "period_no",
+   "fieldtype": "Int",
+   "label": "Period",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "student_group",
+   "fieldtype": "Link",
+   "label": "Class Section",
+   "options": "Student Group",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "course",
+   "fieldtype": "Link",
+   "label": "Subject",
+   "options": "Course",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "absent_instructor",
+   "fieldtype": "Link",
+   "label": "Absent Teacher",
+   "options": "Instructor"
+  },
+  {
+   "fieldname": "cover_instructor",
+   "fieldtype": "Link",
+   "label": "Cover Teacher",
+   "options": "Instructor",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cover_instructor_name",
+   "fieldtype": "Data",
+   "label": "Cover Teacher Name",
+   "read_only": 1,
+   "fetch_from": "cover_instructor.instructor_name"
+  }
+ ],
+ "autoname": "format:CV-{date}-{student_group}-{period_no}",
+ "title_field": "student_group",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "states": [],
+ "modified": "2026-11-19 12:00:00.000000",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "export": 1,
+   "share": 1
+  },
+  {
+   "role": "Education Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "export": 1,
+   "share": 1
+  },
+  {
+   "role": "School Principal",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "export": 1,
+   "share": 1
+  }
+ ]
+}

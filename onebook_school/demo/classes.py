@@ -78,4 +78,4 @@ def instructor(ctx, name):
 	if existing:
 		return existing
 	ctx.made()
-	return frappe.get_doc({"doctype": "Instructor", "instructor_name": name, "status": "Active"}).insert(ignore_permissions=True).name
+	return frappe.get_doc({"doctype": "Instructor", "instructor_name": name, "status": "Active", "oc_company": ctx.company}).insert(ignore_permissions=True).name

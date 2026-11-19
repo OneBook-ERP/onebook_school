@@ -1,0 +1,64 @@
+{
+ "doctype": "DocType",
+ "name": "School Period",
+ "module": "OneBook School",
+ "engine": "InnoDB",
+ "custom": 0,
+ "istable": 1,
+ "issingle": 0,
+ "is_submittable": 0,
+ "editable_grid": 1,
+ "field_order": [
+  "period_no",
+  "label",
+  "start_time",
+  "end_time",
+  "is_break"
+ ],
+ "fields": [
+  {
+   "fieldname": "period_no",
+   "fieldtype": "Int",
+   "label": "Period No",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "label": "Label",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "start_time",
+   "fieldtype": "Time",
+   "label": "Starts",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "end_time",
+   "fieldtype": "Time",
+   "label": "Ends",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "is_break",
+   "fieldtype": "Check",
+   "label": "Break",
+   "in_list_view": 1,
+   "columns": 1
+  }
+ ],
+ "autoname": "",
+ "title_field": "",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "track_changes": 1,
+ "states": [],
+ "modified": "2026-11-19 12:00:00.000000",
+ "owner": "Administrator",
+ "permissions": []
+}

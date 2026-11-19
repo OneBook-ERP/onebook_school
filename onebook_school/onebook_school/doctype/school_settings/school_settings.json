@@ -19,7 +19,9 @@
   "udise_code",
   "emis_school_id",
   "section_fees",
-  "sibling_discount_percent"
+  "sibling_discount_percent",
+  "section_day",
+  "periods"
  ],
  "fields": [
   {
@@ -78,6 +80,17 @@
    "fieldname": "sibling_discount_percent",
    "fieldtype": "Percent",
    "label": "Sibling Concession (% on each younger child)"
+  },
+  {
+   "fieldname": "section_day",
+   "fieldtype": "Section Break",
+   "label": "School Day"
+  },
+  {
+   "fieldname": "periods",
+   "fieldtype": "Table",
+   "label": "Periods",
+   "options": "School Period"
   }
  ],
  "autoname": "",
